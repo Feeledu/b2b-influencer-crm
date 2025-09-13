@@ -40,7 +40,7 @@ A web app for B2B SaaS marketers to **find, track, and measure ROI** from Linked
 
 ## High-Level Tech Stack  
 - **Front-End:** React + TypeScript + Vite, Tailwind + shadcn/ui (minimal, crisp, Airtable/Linear-inspired).  
-- **Back-End:** FastAPI (or Django) for APIs + business logic.  
+- **Back-End:** Python with FastAPI (or Django) for APIs + business logic.  
 - **Database/Auth/Storage:** Supabase (Postgres-based, with built-in auth + file storage).  
 - **Search:** Algolia or Elasticsearch for fast, fuzzy discovery.  
 - **Task Queue:** Celery (future async jobs like reporting, outreach).  
