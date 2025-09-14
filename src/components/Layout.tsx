@@ -19,21 +19,21 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: BarChart3 },
-    { name: "Discover", href: "/discover", icon: Search },
-    { name: "My Influencers", href: "/influencers", icon: Users },
-    { name: "Campaigns", href: "/campaigns", icon: BarChart3 },
+    { name: "📊 Dashboard", href: "/dashboard", icon: BarChart3 },
+    { name: "🔍 Discover", href: "/discover", icon: Search },
+    { name: "👥 My Influencers", href: "/influencers", icon: Users },
+    { name: "🎯 Campaigns", href: "/campaigns", icon: BarChart3 },
   ];
 
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* Navigation Header */}
-      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+      {/* Rich Navigation Header */}
+      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shadow-sm">
         <div className="flex h-16 items-center px-6">
           <div className="flex items-center space-x-4">
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary"></div>
-              <span className="font-bold text-lg">InfluenceHub</span>
+            <Link to="/" className="flex items-center space-x-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-secondary shadow-lg"></div>
+              <span className="font-bold text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">✨ InfluenceHub</span>
             </Link>
           </div>
 

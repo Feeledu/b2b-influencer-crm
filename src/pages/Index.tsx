@@ -8,16 +8,16 @@ const Index = () => {
       {/* Simple Navigation for Landing */}
       <nav className="border-b border-border bg-background/95 backdrop-blur">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary"></div>
-            <span className="font-bold text-xl">InfluenceHub</span>
+          <div className="flex items-center space-x-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-secondary shadow-lg"></div>
+            <span className="font-bold text-2xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">✨ InfluenceHub</span>
           </div>
           <div className="flex items-center space-x-4">
             <Link to="/dashboard">
-              <Button variant="ghost">Sign In</Button>
+              <Button variant="ghost" className="hover:bg-primary/10">🔑 Sign In</Button>
             </Link>
             <Link to="/dashboard">
-              <Button variant="hero">Get Started</Button>
+              <Button className="bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-secondary-dark shadow-lg hover:shadow-xl">🚀 Get Started</Button>
             </Link>
           </div>
         </div>
