@@ -6,7 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { 
   Mail, 
   Phone, 
@@ -28,9 +31,38 @@ import {
 } from "lucide-react";
 
 const Contact = () => {
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const { isSubscriptionActive, isTrialActive } = useSubscription();
   const [activeTab, setActiveTab] = useState("contact");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Set initial tab based on URL parameter
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['contact', 'demo', 'support', 'enterprise'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  // Pre-fill form for enterprise users
+  useEffect(() => {
+    if (activeTab === 'enterprise') {
+      setFormData(prev => ({
+        ...prev,
+        useCase: 'Enterprise Solutions',
+        budget: '€25,000+/month',
+        timeline: 'Within 1 month',
+        interestedFeatures: [
+          'Team Collaboration',
+          'API Access',
+          'Advanced Analytics',
+          'Unlimited AI Credits'
+        ]
+      }));
+    }
+  }, [activeTab]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -164,12 +196,46 @@ const Contact = () => {
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold flex items-center justify-center gap-3">
             <MessageSquare className="h-10 w-10 text-purple-600" />
-            Get in Touch
+            {activeTab === 'enterprise' ? 'Enterprise Solutions' : 'Get in Touch'}
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Ready to transform your B2B influencer marketing? Let's discuss how Fluencr can help you find, connect with, and measure ROI from the right influencers.
+            {activeTab === 'enterprise' 
+              ? 'Ready for enterprise-grade influencer marketing? Let\'s discuss custom solutions for your large team or agency.'
+              : user 
+                ? (isSubscriptionActive 
+                    ? 'Need help with your Fluencr Pro account? We\'re here to support you.'
+                    : isTrialActive
+                      ? 'Questions about your free trial? Let us help you get the most out of Fluencr.'
+                      : 'Ready to upgrade? Let\'s discuss the best plan for your needs.'
+                  )
+                : 'Ready to transform your B2B influencer marketing? Let\'s discuss how Fluencr can help you find, connect with, and measure ROI from the right influencers.'
+            }
           </p>
         </div>
+
+        {/* Enterprise Banner */}
+        {activeTab === 'enterprise' && (
+          <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+                    <Crown className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-purple-900">Enterprise Solutions</h3>
+                    <p className="text-purple-700">
+                      Custom pricing, dedicated support, and advanced features for large teams and agencies.
+                    </p>
+                  </div>
+                </div>
+                <Badge className="bg-purple-100 text-purple-800 text-lg px-4 py-2">
+                  Starting at €220/month
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Value Props */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -204,11 +270,13 @@ const Contact = () => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="contact">Contact Us</TabsTrigger>
+          <TabsList className={`grid w-full ${user ? 'grid-cols-3' : 'grid-cols-4'}`}>
+            <TabsTrigger value="contact">
+              {user ? 'Contact Us' : 'Get Started'}
+            </TabsTrigger>
             <TabsTrigger value="demo">Schedule Demo</TabsTrigger>
             <TabsTrigger value="support">Support</TabsTrigger>
-            <TabsTrigger value="enterprise">Enterprise</TabsTrigger>
+            {!user && <TabsTrigger value="enterprise">Enterprise</TabsTrigger>}
           </TabsList>
 
           {/* Contact Form Tab */}

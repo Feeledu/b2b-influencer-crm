@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +21,7 @@ interface BillingProps {
 }
 
 const Billing: React.FC<BillingProps> = ({ user, onSubscriptionUpdate }) => {
+  const navigate = useNavigate();
   const { subscription, isTrialActive, isSubscriptionActive, daysRemaining, updateSubscription } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -301,7 +303,7 @@ const Billing: React.FC<BillingProps> = ({ user, onSubscriptionUpdate }) => {
             <Button 
               variant="outline" 
               className="w-full border-purple-200 text-purple-700 hover:bg-purple-50"
-              onClick={() => window.open('mailto:sales@fluencr.com?subject=Enterprise Plan Inquiry', '_blank')}
+              onClick={() => navigate('/contact?tab=enterprise')}
             >
               <Crown className="h-4 w-4 mr-2" />
               Contact Sales

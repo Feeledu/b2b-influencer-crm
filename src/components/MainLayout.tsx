@@ -149,7 +149,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
                         <button
                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                          onClick={() => handleMenuClick(() => navigate('/help'))}
+                          onClick={() => handleMenuClick(() => navigate('/support'))}
                         >
                           <HelpCircle className="mr-3 h-4 w-4" />
                           Help & Support

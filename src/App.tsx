@@ -25,6 +25,7 @@ import Settings from "./pages/Settings";
 import HelpSupport from "./pages/HelpSupport";
 import ContactInfluencer from "./pages/ContactInfluencer";
 import Contact from "./pages/Contact";
+import Support from "./pages/Support";
 
 const queryClient = new QueryClient();
 
@@ -115,6 +116,14 @@ const App = () => (
             <Route 
               path="/contact" 
               element={<Contact />} 
+            />
+            <Route 
+              path="/support" 
+              element={
+                <ProtectedRoute>
+                  <Support />
+                </ProtectedRoute>
+              } 
             />
             {/* Admin Routes */}
             <Route 
