@@ -35,6 +35,9 @@ const Index = () => {
             <span className="font-bold text-2xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">✨ Fluencr</span>
           </div>
           <div className="flex items-center space-x-4">
+            <Link to="/contact">
+              <Button variant="ghost" className="hover:bg-primary/10">📞 Contact</Button>
+            </Link>
             <Link to="/auth">
               <Button variant="ghost" className="hover:bg-primary/10">🔑 Sign In</Button>
             </Link>

@@ -41,6 +41,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     { name: "My Influencers", href: "/influencers", icon: UserPlus },
     { name: "Campaigns", href: "/campaigns", icon: Target },
     { name: "Billing", href: "/billing", icon: CreditCard },
+    { name: "Contact", href: "/contact", icon: Mail },
   ];
 
   const handleSignOut = async () => {
