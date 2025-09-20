@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Connection Test</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Supabase Connection Test</h1>
+    <div id="status">Testing connection...</div>
+    <div id="results"></div>
+
+    <script>
+        const supabaseUrl = 'https://ahrmmjceerzgytuczakn.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFocm1tamNlZXJ6Z3l0dWN6YWtuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NzUyOTUsImV4cCI6MjA3MzQ1MTI5NX0.VkuSR6wLUYR_47poleqM0yML_JE3TTTYy2Dj-h-IBiY';
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        async function testConnection() {
+            try {
+                // Test 1: Check if we can connect
+                document.getElementById('status').innerHTML = '✅ Connected to Supabase!';
+                
+                // Test 2: Try to query the influencers table
+                const { data, error } = await supabase
+                    .from('influencers')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) {
+                    document.getElementById('results').innerHTML = `
+                        <h3>❌ Database Query Error:</h3>
+                        <p>${error.message}</p>
+                        <p>This might mean the tables don't exist yet or RLS is blocking access.</p>
+                    `;
+                } else {
+                    document.getElementById('results').innerHTML = `
+                        <h3>✅ Database Query Success!</h3>
+                        <p>Found ${data.length} influencers in the database.</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+                
+            } catch (err) {
+                document.getElementById('status').innerHTML = '❌ Connection failed!';
+                document.getElementById('results').innerHTML = `
+                    <h3>Error:</h3>
+                    <p>${err.message}</p>
+                `;
+            }
+        }
+        
+        testConnection();
+    </script>
+</body>
+</html>

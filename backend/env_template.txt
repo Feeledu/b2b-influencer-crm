@@ -1,0 +1,25 @@
+# Copy this file to .env and replace the placeholder values with your actual credentials
+
+# Supabase Configuration
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_ANON_KEY=your-anon-key-here
+SUPABASE_SERVICE_KEY=your-service-role-key-here
+
+# Database Connection (for migrations)
+SUPABASE_HOST=db.your-project-id.supabase.co
+SUPABASE_PORT=5432
+SUPABASE_DB=postgres
+SUPABASE_USER=postgres
+SUPABASE_PASSWORD=your-database-password-here
+
+# JWT Configuration
+JWT_SECRET_KEY=your-jwt-secret-key-here
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# CORS Configuration
+ALLOWED_ORIGINS=http://localhost:3000,https://app.b2binfluencer.com
+
+# Environment
+ENVIRONMENT=development
+LOG_LEVEL=INFO

@@ -26,13 +26,12 @@ const HeroSection = () => {
 
           <h1 className="text-6xl md:text-7xl font-bold tracking-tight mb-6">
             <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-shimmer bg-[length:200%_100%]">
-              B2B Influencer CRM
+              Fluencr
             </span>
           </h1>
           
           <p className="text-xl md:text-2xl leading-relaxed text-muted-foreground max-w-4xl mx-auto mb-4">
-            🎯 Discover LinkedIn creators, podcast hosts, and newsletter writers. 
-            Track ROI from dark social channels with zero guesswork.
+            Fluencr lets you find B2B influencers across LinkedIn, podcasts, YouTube, and newsletters with audiences that match yours, connect you with them, and measure ROI from every campaign.
           </p>
           
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-12">

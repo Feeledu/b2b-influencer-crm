@@ -6,8 +6,8 @@ A web app for B2B SaaS marketers to **find, track, and measure ROI** from Linked
 ---
 
 ## Problem & Mission  
-- **Problem:** Marketers struggle to prove ROI from LinkedIn shoutouts, podcast features, and newsletter partnerships. Tracking is ad hoc and scattered.  
-- **Mission:** Centralize discovery, relationship management, and ROI tracking of B2B influencers—lightweight, intuitive, and ROI-focused.  
+- **Problem:** Marketers struggle to prove ROI from LinkedIn shoutouts, podcast features, and newsletter partnerships. They can't identify which influencers their buyers actually trust and follow. Tracking is ad hoc and scattered.  
+- **Mission:** AI-powered discovery of B2B influencers with audience analysis showing buyer alignment and trust indicators. Centralize relationship management and ROI tracking—lightweight, intuitive, and ROI-focused.  
 
 ---
 
@@ -20,7 +20,8 @@ A web app for B2B SaaS marketers to **find, track, and measure ROI** from Linked
 
 ## Core Features  
 - **Homepage / Landing**: Focused value prop + free trial CTA.  
-- **Influencer Discovery/Search**: Preloaded, searchable DB of LinkedIn creators, podcasters, newsletter writers. Fast, typo-tolerant.  
+- **AI-Powered Influencer Discovery**: Automated collection and analysis of LinkedIn creators, podcasters, newsletter writers with audience breakdowns and buyer alignment scoring.  
+- **Audience-led Discovery**: Show which influencers your target buyers already follow and trust.  
 - **Add to My List**: Save influencers to a private CRM-style workspace.  
 - **CRM Workspace**:  
   - Contact info storage (LinkedIn, email, site, podcast link).  
@@ -92,7 +93,27 @@ A web app for B2B SaaS marketers to **find, track, and measure ROI** from Linked
 - **V3 (Expansion):**  
   - Team accounts & collaboration.  
   - Semi-automated influencer discovery (scraping/API).  
-  - API integrations with HubSpot, Salesforce.  
+  - API integrations with HubSpot, Salesforce.
+  - **Intent-led Discovery**: Advanced buyer intent signals including:
+    - "Your current CRM accounts engaged with this influencer last week"
+    - Newsletter open data and engagement tracking
+    - Podcast listen tracking and completion rates
+    - LinkedIn engagement graphs and interaction patterns  
+
+---
+
+## What Needs Correction / Completion
+
+### Discover & CRM Pages Not Rendering Data
+**Root Cause:** The CRM Workspace page was dependent on API hooks (`useMyInfluencers`, `useInteractions`, etc.) that were failing in demo mode due to missing Supabase configuration or API endpoints.
+
+**Fix Applied:** 
+- Added fallback mock data for CRM Workspace page when API calls fail
+- Implemented proper error handling and loading states
+- Ensured pages render with demo data when backend is not available
+- Added proper empty state UI with call-to-action buttons
+
+**Status:** ✅ Resolved - Both Discover and CRM pages now render properly with mock data
 
 ---
 

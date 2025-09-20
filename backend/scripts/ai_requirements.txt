@@ -1,0 +1,8 @@
+# AI Data Collection Dependencies
+aiohttp>=3.8.0
+asyncio
+openai>=1.0.0  # For AI analysis (optional)
+beautifulsoup4>=4.11.0  # For web scraping
+requests>=2.28.0
+selenium>=4.0.0  # For dynamic content scraping
+python-dotenv>=0.19.0

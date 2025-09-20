@@ -1,115 +1,124 @@
-# Product Roadmap
+# 🚀 Fluencr Roadmap
 
-## Phase 0: Already Completed
+## Value Proposition
 
-The following features have been implemented:
+- **Short:**  
+Fluencr lets you find B2B influencers, connect you with them, and measure ROI.
 
-- [x] **Product Planning** - Comprehensive masterplan with vision, tech stack, and roadmap
-- [x] **Agent OS Setup** - Development framework and documentation structure
-- [x] **Technical Architecture** - Technology stack decisions and infrastructure planning
+- **Long:**  
+Fluencr lets you find B2B influencers across LinkedIn, podcasts, YouTube, and newsletters with audiences that match yours, connect you with them, and measure ROI from every campaign.
 
-## Phase 1: MVP Core Platform
+---
 
-**Goal:** Launch the influence-to-revenue platform with B2B-only discovery and pipeline attribution
-**Success Criteria:** 10+ beta users discovering influencers their buyers trust and tracking pipeline impact
+## Phase 1 — Launch (MVP)
 
-### Features
+**Core product to prove value.**
 
-- [ ] **Project Setup** - Initialize React + TypeScript + Vite frontend with Tailwind CSS `[S]`
-- [ ] **Backend API Setup** - FastAPI backend with Supabase integration `[S]`
-- [ ] **Database Schema** - Design and implement PostgreSQL schema for users, influencers, campaigns, pipeline data `[M]`
-- [ ] **Authentication System** - Supabase Auth with email and Google OAuth `[M]`
-- [ ] **B2B Influencer Database** - Curated database of LinkedIn creators, podcast hosts, newsletter writers `[L]`
-- [ ] **Intent-Led Discovery** - Advanced search with industry filtering and audience-buyer alignment scoring `[L]`
-- [ ] **Add to My List** - One-click influencer saving to CRM workspace `[S]`
-- [ ] **CRM Workspace** - Contact management, notes, status tags, interaction timeline `[L]`
-- [ ] **Campaign Tracking** - Campaign creation with UTM generation and fuzzy attribution `[M]`
-- [ ] **Pipeline Attribution** - Basic CRM integration to track influencer impact on opportunities `[L]`
-- [ ] **ROI Dashboard** - Revenue-focused metrics showing pipeline and opportunity impact `[M]`
-- [ ] **Subscription Setup** - Stripe integration for €79/mo billing `[L]`
+- [x] **Discovery:** Search influencers across LinkedIn, podcasts, YouTube, newsletters.  
+- [x] **Audience match:** Show which influencers align with your buyers.  
+- [x] **My Influencers:** Save, tag, and manage contacts.  
+- [x] **Campaigns:** Create campaigns, add influencers, generate UTM links.  
+- [x] **ROI Tracking:** Log leads, demos, revenue → view simple dashboard.  
+- [x] **Auth & Billing:** Supabase auth (email + Google), Stripe (€80/mo Pro, €220/mo Enterprise after 7-day trial).  
+- [x] **Admin Tools:** CSV imports, data verification, role-based access (admin-only).  
 
-### Dependencies
+**Goal:** A marketer or founder can discover, connect, and track ROI in one workflow.
 
-- Supabase project setup and configuration
-- Algolia account and search index setup
-- Stripe account and webhook configuration
-- Initial influencer dataset preparation
+---
 
-## Phase 2: Advanced Attribution & CRM Integration
+## Phase 2 — Polish & Proof
 
-**Goal:** Add advanced pipeline attribution and CRM integrations for revenue tracking
-**Success Criteria:** Users can track influencer impact on actual pipeline and revenue through CRM integrations
+**Make it stickier, smoother, and trustworthy.**
 
-### Features
+- [ ] **Better dashboards:** clearer ROI breakdowns.  
+- [ ] **Audience insights:** job titles, company size, industries.  
+- [ ] **Dataset refresh:** Admin panel bulk updates.  
+- [ ] **Error states & loading:** polished UX.  
+- [ ] **Real ChatGPT Integration:** Replace mock AI with OpenAI API for message generation
+  - Get OpenAI API key and add to environment variables
+  - Update `premiumAIService.ts` to call real ChatGPT API
+  - Fix prompt leakage issue (user input appearing in generated messages)
+  - Add proper error handling and fallback to templates
+  - Cost: ~$0.03-0.06 per message (5 free trials = ~$0.15-0.30 total)
 
-- [ ] **HubSpot Integration** - Sync influencer campaigns with HubSpot deals and contacts `[L]`
-- [ ] **Salesforce Integration** - Connect influencer activity to Salesforce opportunities `[L]`
-- [ ] **Fuzzy Attribution Engine** - Track non-UTM channels through direct traffic and branded search `[XL]`
-- [ ] **Pipeline Impact Dashboard** - Show which influencers drive actual opportunities and revenue `[M]`
-- [ ] **Admin Panel** - Influencer database management and intent data updates `[L]`
-- [ ] **File Upload System** - Campaign briefs and document storage `[M]`
-- [ ] **Mobile Optimization** - Responsive design improvements `[S]`
-- [ ] **Advanced Search Filters** - Industry, audience demographics, buyer alignment scoring `[M]`
+**Goal:** 10–20 beta users actively running campaigns.
 
-### Dependencies
+---
 
-- Phase 1 completion
-- User feedback collection and analysis
+## Phase 3 — Growth Features
 
-## Phase 3: Intent-Led Discovery & AI
+**Expand depth + automation.**
 
-**Goal:** Add intent-led discovery and AI-powered features for who buyers already trust
-**Success Criteria:** Users can discover influencers their ICP already follows and engage with
+- [ ] **AI Credits System:** Usage tracking and limits (Pro: 200/month, Enterprise: unlimited)
+- [ ] **Team Collaboration (Enterprise):** Multi-user accounts, role management, approval workflows
+- [ ] **Advanced Analytics (Enterprise):** Pipeline forecasting, predictive ROI, custom reports
+- [ ] **API Access (Enterprise):** RESTful API, CRM integrations, webhook system
+- [ ] **Intent-led Discovery:** Advanced buyer intent signals and engagement tracking
 
-### Features
+---
 
-- [ ] **Intent Data Integration** - Connect to LinkedIn engagement, newsletter opens, podcast listens `[XL]`
-- [ ] **Buyer Trust Graph** - Show which influencers your current customers already follow `[XL]`
-- [ ] **AI Influencer Suggestions** - Smart recommendations based on buyer behavior patterns `[XL]`
-- [ ] **Outreach Templates** - Email and DM templates for influencer outreach `[M]`
-- [ ] **Chrome Extension** - Quick "Add influencer from LinkedIn" functionality `[L]`
-- [ ] **Smart Categorization** - AI-powered influencer tagging and buyer alignment scoring `[L]`
-- [ ] **Performance Predictions** - ML models to predict influencer campaign success `[XL]`
+## Phase 4 — Expansion
 
-### Dependencies
+**Push toward category leadership.**
 
-- Phase 2 completion
-- AI/ML model development and training
-- Google Analytics API integration
+- [ ] **Semi-automated discovery:** scraping/API sync.  
+- [ ] **Marketplace features:** influencers self-onboard, rate cards.  
+- [ ] **Advanced analytics:** pipeline attribution, performance predictions.  
+- [ ] **Enterprise features:** approval workflows, white-label options.  
 
-## Phase 4: Team Collaboration
+**Goal:** Position Fluencr as the go-to influence-to-revenue platform for SaaS.
 
-**Goal:** Enable team accounts and collaboration features
-**Success Criteria:** 5+ team accounts with 3+ users each, successful collaboration workflows
+---
 
-### Features
+## 📌 Core Features (current scope to lock)
 
-- [ ] **Team Accounts** - Multi-user workspaces with role-based permissions `[L]`
-- [ ] **Collaboration Tools** - Shared influencer lists and campaign coordination `[M]`
-- [ ] **Approval Workflows** - Campaign approval processes for larger teams `[M]`
-- [ ] **Team Analytics** - Department and team-level ROI reporting `[M]`
-- [ ] **Integration APIs** - HubSpot, Salesforce, and other CRM integrations `[L]`
+- [x] **Find:** Search influencers across LinkedIn, podcasts, YouTube, newsletters.  
+- [x] **Match:** Audience alignment insights (buyers your customers already trust).  
+- [x] **Connect:** Save to CRM-style workspace, track notes, manage contacts.  
+- [x] **Campaigns:** Create, assign influencers, generate links.  
+- [x] **Measure:** ROI dashboard tying campaigns → pipeline metrics.  
+- [x] **Admin:** Data imports, verification, gated by your login only.  
 
-### Dependencies
+---
 
-- Phase 3 completion
-- Enterprise customer demand validation
+## ✅ Current Status (already done)
 
-## Phase 5: Advanced Features
+- [x] **Authentication:** Supabase auth with email + Google OAuth
+- [x] **Database:** Complete schema for users, influencers, campaigns, interactions
+- [x] **Backend:** FastAPI with all CRUD endpoints connected to Supabase
+- [x] **Discovery:** Search influencers with filters (platform, industry, audience size)
+- [x] **CRM Workspace:** Save influencers, track interactions, manage relationships
+- [x] **Campaigns:** Create campaigns, assign influencers, generate UTM links, ROI tracking
+- [x] **Admin Panel:** CSV import, influencer management, data verification
+- [x] **Billing System:** 2-tier pricing (Pro €80/mo, Enterprise €220/mo), 7-day free trial
+- [x] **Subscription Management:** Trial countdown, upgrade flows, feature gating
+- [x] **UI/UX:** Modern React app with TypeScript, Tailwind, shadcn/ui components
+- [x] **Developer Tools:** Panel for testing subscription states and features  
 
-**Goal:** Expand platform capabilities and market reach
-**Success Criteria:** 1000+ active users, enterprise customer acquisition
+---
 
-### Features
+## 🔧 What's Left to Complete
 
-- [ ] **Semi-Automated Discovery** - Automated influencer discovery via APIs and scraping `[XL]`
-- [ ] **Marketplace Features** - Sponsored post and partnership marketplace `[XL]`
-- [ ] **Advanced Analytics** - Predictive analytics and market insights `[XL]`
-- [ ] **White-Label Solution** - Customizable platform for agencies `[L]`
-- [ ] **API Platform** - Public API for third-party integrations `[M]`
+### **Phase 1 (MVP) - 95% Complete**
+- [x] **Core Features:** Discovery, CRM, Campaigns, ROI tracking ✅
+- [x] **Authentication & Billing:** Supabase auth, Stripe integration ✅
+- [x] **UI/UX:** Modern design system, responsive layout ✅
+- [ ] **Data Persistence:** Connect frontend to real Supabase backend (currently using mock data)
+- [ ] **Error Handling:** Add proper error states and loading indicators
+- [ ] **Mobile Optimization:** Test and fix mobile responsiveness
 
-### Dependencies
+### **Phase 2 (Polish) - 0% Complete**
+- [ ] **Real Data Integration:** Replace all mock data with live Supabase queries
+- [ ] **Performance Optimization:** Code splitting, lazy loading, caching
+- [ ] **Advanced UI States:** Empty states, error boundaries, skeleton loading
+- [ ] **Testing:** Unit tests, integration tests, E2E tests
+- [ ] **Documentation:** API docs, user guides, deployment guides
 
-- Phase 4 completion
-- Market expansion strategy
-- Enterprise sales pipeline development
+### **Phase 3 (Enterprise Features) - 0% Complete**
+- [ ] **AI Credits System:** Usage tracking, billing integration
+- [ ] **Team Collaboration:** Multi-user accounts, role management
+- [ ] **Advanced Analytics:** Forecasting, predictive ROI
+- [ ] **API & Integrations:** RESTful API, CRM connections
+- [ ] **Intent Discovery:** Advanced buyer intent signals
+
+---  

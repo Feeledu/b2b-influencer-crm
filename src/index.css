@@ -141,3 +141,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .grid-view .influencer-card {
+    margin-top: 8px; /* tighter grid spacing */
+  }
+
+  .list-view .influencer-card {
+    margin-top: 2px; /* minimal list spacing */
+  }
+}

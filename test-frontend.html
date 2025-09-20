@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Frontend</title>
+</head>
+<body>
+    <h1>B2B Influencer CRM - Frontend Test</h1>
+    <p>Frontend is running on: <a href="http://localhost:8080" target="_blank">http://localhost:8080</a></p>
+    <p>Backend API is running on: <a href="http://localhost:8000" target="_blank">http://localhost:8000</a></p>
+    <p>API Documentation: <a href="http://localhost:8000/docs" target="_blank">http://localhost:8000/docs</a></p>
+    
+    <h2>Test Instructions:</h2>
+    <ol>
+        <li>Open <a href="http://localhost:8080" target="_blank">http://localhost:8080</a> in your browser</li>
+        <li>You should see the landing page with "InfluenceHub" branding</li>
+        <li>Click "Get Started" to go to the auth page</li>
+        <li>Since we're in demo mode, you'll be automatically logged in as a demo user</li>
+        <li>Navigate to the Dashboard to see metrics</li>
+        <li>Go to "Discover" to see the influencer discovery page with mock data</li>
+        <li>Go to "My Influencers" to see your saved influencers (empty initially)</li>
+    </ol>
+    
+    <h2>Expected Behavior:</h2>
+    <ul>
+        <li>✅ Landing page loads with hero section</li>
+        <li>✅ Authentication works in demo mode</li>
+        <li>✅ Dashboard shows mock metrics and data</li>
+        <li>✅ Discover page shows 3 mock influencers with AI analysis</li>
+        <li>✅ My Influencers page shows empty state initially</li>
+        <li>✅ "Add to My List" functionality works (saves to local state)</li>
+    </ul>
+    
+    <h2>Mock Data Includes:</h2>
+    <ul>
+        <li>Sarah Chen (LinkedIn) - SaaS Marketing Expert</li>
+        <li>Tech Talk Podcast - Weekly SaaS podcast</li>
+        <li>SaaS Weekly - Newsletter covering SaaS trends</li>
+    </ul>
+    
+    <p><strong>Note:</strong> The app is currently running in demo mode with mock data. To use real data, you'll need to set up Supabase credentials in the .env files.</p>
+</body>
+</html>
