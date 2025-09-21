@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
+import { useInfluencers, useMyInfluencers, useInfluencerActions } from "@/hooks/useInfluencers";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Search, 
   Filter, 
@@ -34,278 +36,144 @@ const Discover = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("discover");
   const [viewMode, setViewMode] = useState("grid");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
-  const [addedInfluencers, setAddedInfluencers] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const { toast } = useToast();
 
-  // Load added influencers from localStorage on component mount
-  useEffect(() => {
-    const saved = localStorage.getItem('addedInfluencers');
-    if (saved) {
-      try {
-        setAddedInfluencers(new Set(JSON.parse(saved)));
-      } catch (error) {
-        console.error('Error loading added influencers:', error);
-      }
+  // Use real API hooks
+  const { 
+    influencers, 
+    loading, 
+    error, 
+    pagination,
+    refetch: refetchInfluencers 
+  } = useInfluencers({
+    page: currentPage,
+    limit: 20,
+    search: searchTerm || undefined,
+    platform: selectedFilters.find(f => ['LinkedIn', 'Twitter', 'Podcast', 'Newsletter'].includes(f)) || undefined,
+    industry: selectedFilters.find(f => ['Technology', 'Product', 'Marketing', 'Sales', 'SaaS', 'Media'].includes(f)) || undefined,
+  });
+
+  const { 
+    myInfluencers, 
+    refetch: refetchMyInfluencers 
+  } = useMyInfluencers();
+
+  const { 
+    addToMyList, 
+    removeFromMyList 
+  } = useInfluencerActions();
+
+  // Get added influencer IDs from my influencers
+  const addedInfluencerIds = new Set(myInfluencers.map(ui => ui.influencer_id));
+
+  const handleAddInfluencer = async (influencerId: string, influencerName: string) => {
+    const success = await addToMyList(influencerId, '', 0, []);
+
+    if (success) {
+      toast({
+        title: "Success",
+        description: `${influencerName} added to your list`,
+      });
+      refetchInfluencers();
+      refetchMyInfluencers();
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to add influencer",
+        variant: "destructive",
+      });
     }
-  }, []);
-
-  // Save added influencers to localStorage whenever it changes
-  useEffect(() => {
-    const idsArray = Array.from(addedInfluencers);
-    localStorage.setItem('addedInfluencers', JSON.stringify(idsArray));
-    console.log('Saving to localStorage:', idsArray);
-  }, [addedInfluencers]);
-
-  const handleAddInfluencer = (influencerId: string, influencerName: string) => {
-    setAddedInfluencers(prev => {
-      const newSet = new Set([...prev, influencerId]);
-      console.log('Adding influencer:', { influencerId, influencerName, newSet: Array.from(newSet) });
-      return newSet;
-    });
   };
 
-  const handleRemoveInfluencer = (influencerId: string, influencerName: string) => {
-    setAddedInfluencers(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(influencerId);
-      return newSet;
-    });
+  const handleRemoveInfluencer = async (influencerId: string, influencerName: string) => {
+    const success = await removeFromMyList(influencerId);
+
+    if (success) {
+      toast({
+        title: "Success",
+        description: `${influencerName} removed from your list`,
+      });
+      refetchInfluencers();
+      refetchMyInfluencers();
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to remove influencer",
+        variant: "destructive",
+      });
+    }
   };
+
 
   const isInfluencerAdded = (influencerId: string) => {
-    return addedInfluencers.has(influencerId);
+    return addedInfluencerIds.has(influencerId);
   };
 
-  // Mock data
-  const mockInfluencers = [
-    {
-      id: '1',
-      name: 'John Doe',
-      platform: 'LinkedIn',
-      followers: 15000,
-      engagement_rate: 4.2,
-      industry: 'Technology',
-      bio: 'SaaS growth expert helping startups scale through content marketing.',
-      topics: ['SaaS', 'Growth', 'Marketing'],
-      location: 'San Francisco, CA',
-      verified: true,
-      intent_score: 95,
-      recent_mentions: 12,
-      buying_signals: ['Pricing inquiries', 'Demo requests', 'Competitor mentions'],
-      content_themes: ['SaaS metrics', 'Growth hacking', 'Customer success'],
-      audience_alignment: {
-        job_titles: ['VP Marketing', 'CMO', 'Growth Manager'],
-        industries: ['SaaS', 'Technology', 'Marketing'],
-        company_size: '50-500 employees',
-        alignment_score: 92
-      }
-    },
-    {
-      id: '2',
-      name: 'Sarah Chen',
-      platform: 'Twitter',
-      followers: 8500,
-      engagement_rate: 6.8,
-      industry: 'Product',
-      bio: 'Product manager turned content creator sharing insights on product development.',
-      topics: ['Product Management', 'UX', 'Design'],
-      location: 'New York, NY',
-      verified: false,
-      intent_score: 88,
-      recent_mentions: 8,
-      buying_signals: ['Tool comparisons', 'Implementation questions', 'ROI discussions'],
-      content_themes: ['Product strategy', 'UX research', 'Design systems'],
-      audience_alignment: {
-        job_titles: ['Product Manager', 'UX Designer', 'Product Owner'],
-        industries: ['Technology', 'Product', 'Design'],
-        company_size: '10-100 employees',
-        alignment_score: 78
-      }
-    },
-    {
-      id: '3',
-      name: 'Mike Rodriguez',
-      platform: 'Newsletter',
-      followers: 12000,
-      engagement_rate: 8.5,
-      industry: 'Marketing',
-      bio: 'B2B marketing strategist with 10+ years experience in demand generation.',
-      topics: ['B2B Marketing', 'Demand Gen', 'Sales'],
-      location: 'Austin, TX',
-      verified: true,
-      intent_score: 82,
-      recent_mentions: 15,
-      buying_signals: ['Marketing tool evaluations', 'Campaign optimization', 'Lead generation'],
-      content_themes: ['Marketing automation', 'Lead scoring', 'Email marketing'],
-      audience_alignment: {
-        job_titles: ['Marketing Director', 'Demand Gen Manager', 'Marketing Manager'],
-        industries: ['Marketing', 'SaaS', 'Technology'],
-        company_size: '100-1000 employees',
-        alignment_score: 85
-      }
-    },
-    {
-      id: '4',
-      name: 'Alex Kim',
-      platform: 'Podcast',
-      followers: 25000,
-      engagement_rate: 3.2,
-      industry: 'Media',
-      bio: 'Host of the Tech Leaders Podcast, interviewing successful entrepreneurs.',
-      topics: ['Entrepreneurship', 'Leadership', 'Tech'],
-      location: 'Seattle, WA',
-      verified: true,
-      intent_score: 75,
-      recent_mentions: 6,
-      buying_signals: ['Podcast sponsorship inquiries', 'Speaking opportunities', 'Content partnerships'],
-      content_themes: ['Startup stories', 'Leadership insights', 'Tech trends'],
-      audience_alignment: {
-        job_titles: ['CEO', 'Founder', 'VP Engineering'],
-        industries: ['Technology', 'Startups', 'Media'],
-        company_size: '1-50 employees',
-        alignment_score: 65
-      }
-    },
-    {
-      id: '5',
-      name: 'Emma Wilson',
-      platform: 'LinkedIn',
-      followers: 18000,
-      engagement_rate: 5.1,
-      industry: 'Sales',
-      bio: 'Sales enablement expert helping sales teams close more deals.',
-      topics: ['Sales', 'Enablement', 'CRM'],
-      location: 'Chicago, IL',
-      verified: false,
-      intent_score: 90,
-      recent_mentions: 20,
-      buying_signals: ['CRM evaluations', 'Sales process optimization', 'Team training needs'],
-      content_themes: ['Sales methodology', 'CRM best practices', 'Sales training'],
-      audience_alignment: {
-        job_titles: ['Sales Director', 'VP Sales', 'Sales Manager'],
-        industries: ['Sales', 'Technology', 'SaaS'],
-        company_size: '50-500 employees',
-        alignment_score: 88
-      }
-    },
-    {
-      id: '6',
-      name: 'David Park',
-      platform: 'Newsletter',
-      followers: 9500,
-      engagement_rate: 7.3,
-      industry: 'SaaS',
-      bio: 'SaaS founder sharing insights on product-market fit and scaling.',
-      topics: ['SaaS', 'Product', 'Scaling'],
-      location: 'San Francisco, CA',
-      verified: true,
-      intent_score: 92,
-      recent_mentions: 18,
-      buying_signals: ['Product feedback requests', 'Partnership discussions', 'Investment inquiries'],
-      content_themes: ['Product development', 'Market research', 'Growth strategies'],
-      audience_alignment: {
-        job_titles: ['Founder', 'CEO', 'Product Manager'],
-        industries: ['SaaS', 'Technology', 'Product'],
-        company_size: '1-100 employees',
-        alignment_score: 95
-      }
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePreviousPage = () => {
+    if (pagination.has_prev) {
+      setCurrentPage(currentPage - 1);
     }
-  ];
+  };
 
-  // Filter influencers based on search and filters
-  const filteredInfluencers = mockInfluencers.filter((influencer) => {
-    // Search filter
-    const matchesSearch = !searchTerm || 
-      influencer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      influencer.bio.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      influencer.industry.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      influencer.topics.some(topic => 
-        topic.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  const handleNextPage = () => {
+    if (pagination.has_next) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
 
-    // Quick filter badges and advanced filters
-    const matchesFilters = selectedFilters.length === 0 || selectedFilters.every(filter => {
-      switch (filter) {
-        // Industries
-        case 'Technology':
-          return influencer.industry === 'Technology';
-        case 'Product':
-          return influencer.industry === 'Product';
-        case 'Marketing':
-          return influencer.industry === 'Marketing';
-        case 'Sales':
-          return influencer.industry === 'Sales';
-        case 'SaaS':
-          return influencer.industry === 'SaaS';
-        case 'Media':
-          return influencer.industry === 'Media';
-        
-        // Platforms
-        case 'LinkedIn':
-          return influencer.platform === 'LinkedIn';
-        case 'Twitter':
-          return influencer.platform === 'Twitter';
-        case 'Podcast':
-          return influencer.platform === 'Podcast';
-        case 'Newsletter':
-          return influencer.platform === 'Newsletter';
-        
-        // Follower ranges
-        case '1K+':
-          return influencer.followers >= 1000;
-        case '10K+ Followers':
-        case '10K+':
-          return influencer.followers >= 10000;
-        case '50K+':
-          return influencer.followers >= 50000;
-        case '100K+':
-          return influencer.followers >= 100000;
-        
-        default:
-          return true;
-      }
-    });
 
-    return matchesSearch && matchesFilters;
-  });
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Filter out already added influencers
+  const availableInfluencers = influencers.filter(influencer => 
+    !addedInfluencerIds.has(influencer.id)
+  );
 
   console.log('Discover page rendering', { 
     loading, 
     error, 
-    mockInfluencers: mockInfluencers.length,
-    filteredInfluencers: filteredInfluencers.length,
+    influencers: influencers.length,
+    availableInfluencers: availableInfluencers.length,
+    addedInfluencerIds: Array.from(addedInfluencerIds),
     searchTerm,
     selectedFilters
   });
 
   const platformIcons = {
-    LinkedIn: Users,
-    Twitter: Users,
-    Podcast: Mic,
-    Newsletter: Mail,
+    linkedin: Users,
+    twitter: Users,
+    podcast: Mic,
+    newsletter: Mail,
   };
 
   const platformConfig = {
-    LinkedIn: {
+    linkedin: {
       color: '#7C3AED',
       icon: Users,
     },
-    Twitter: {
+    twitter: {
       color: '#7C3AED',
       icon: Users,
     },
-    YouTube: {
+    youtube: {
       color: '#7C3AED',
       icon: Users,
     },
-    Newsletter: {
+    newsletter: {
       color: '#7C3AED',
       icon: Mail,
     },
-    Podcast: {
+    podcast: {
       color: '#7C3AED',
       icon: Mic,
     },
@@ -317,6 +185,7 @@ const Discover = () => {
         ? prev.filter(f => f !== filter)
         : [...prev, filter]
     );
+    setCurrentPage(1); // Reset to first page when filters change
   };
 
   return (
@@ -523,9 +392,14 @@ const Discover = () => {
           <TabsContent value="discover" className="space-y-6">
             {/* View Mode Toggle */}
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">
-                {filteredInfluencers.length} Influencers Found
-              </h2>
+              <div>
+                <h2 className="text-xl font-semibold">
+                  {pagination.total} Influencers Found
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Showing {((pagination.page - 1) * pagination.limit) + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
+                </p>
+              </div>
               <div className="flex items-center gap-2 border border-gray-200 rounded-lg p-1 bg-gray-50">
                 <Button
                   variant={viewMode === "grid" ? "default" : "ghost"}
@@ -564,7 +438,7 @@ const Discover = () => {
                     <AlertCircle className="h-6 w-6 text-red-600" />
                   </div>
                   <p className="text-destructive mb-4">{error}</p>
-                  <Button onClick={() => setError(null)} variant="outline">
+                  <Button onClick={() => window.location.reload()} variant="outline">
                     Try Again
                   </Button>
                 </div>
@@ -574,7 +448,7 @@ const Discover = () => {
             {/* Results Grid */}
             {!loading && !error && (
               <>
-                {filteredInfluencers.length === 0 ? (
+                {availableInfluencers.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                       <Search className="h-6 w-6 text-gray-400" />
@@ -594,136 +468,113 @@ const Discover = () => {
                     </Button>
                   </div>
                 ) : (
-                  <div className={`grid gap-6 ${viewMode === "grid" ? "grid-view grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 auto-rows-fr" : "list-view grid-cols-1"}`}>
-                    {filteredInfluencers.map((influencer) => {
-                const platformInfo = platformConfig[influencer.platform as keyof typeof platformConfig];
-                const PlatformIcon = platformInfo?.icon || Users;
-                
-                return (
-                  <Card key={influencer.id} className={`influencer-card p-3 hover:shadow-lg transition-all duration-300 flex flex-col ${viewMode === 'grid' ? 'h-[350px]' : 'h-[300px]'}`}>
-                    {/* Header with Name, Headline, and Action Buttons */}
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-bold text-lg">{influencer.name}</h3>
-                          {influencer.verified && (
-                            <div className="h-4 w-4 rounded-full bg-primary flex items-center justify-center">
-                              <div className="h-2 w-2 rounded-full bg-white" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                  <div className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1"}`}>
+                    {availableInfluencers.map((influencer) => {
+                      const platformInfo = platformConfig[influencer.platform as keyof typeof platformConfig];
+                      const PlatformIcon = platformInfo?.icon || Users;
                       
-                      {/* Action Buttons - Top Right */}
-                      <div className="flex items-center space-x-2 flex-shrink-0">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => {
-                            console.log('Heart clicked for:', influencer.name);
-                          }}
-                          className="hover:bg-red-50 hover:text-red-500 h-8 w-8"
-                        >
-                          <Heart className="h-4 w-4" />
-                        </Button>
-                        {isInfluencerAdded(influencer.id) ? (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleRemoveInfluencer(influencer.id, influencer.name)}
-                            className="border-green-500 text-green-600 hover:bg-green-50 font-medium px-3 py-1 h-8"
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Added
-                          </Button>
-                        ) : (
-                          <Button 
-                            variant="default" 
-                            size="sm"
-                            onClick={() => handleAddInfluencer(influencer.id, influencer.name)}
-                            className="bg-primary hover:bg-primary/90 text-white font-medium px-3 py-1 h-8"
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Add
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                      // Generate mock audience match data
+                      const audienceMatch = Math.floor(Math.random() * 20) + 70; // 70-89%
+                      const roles = ["VP Marketing", "CMO", "Product Manager", "UX Designer", "Marketing Director", "Demand Gen Manager"];
+                      const companySizes = ["10-100 employees", "50-500 employees", "100-1000 employees"];
+                      
+                      const selectedRoles = roles
+                        .sort(() => 0.5 - Math.random())
+                        .slice(0, 2);
+                      
+                      const selectedCompanySize = companySizes[Math.floor(Math.random() * companySizes.length)];
+                      
+                      return (
+                        <Card key={influencer.id} className={`bg-white rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 flex flex-col justify-between ${viewMode === 'grid' ? 'h-[380px]' : 'h-[200px]'}`}>
+                          <div className="space-y-3">
+                            {/* Header with Name and Add Button */}
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-bold text-lg text-gray-900">{influencer.name}</h3>
+                              {isInfluencerAdded(influencer.id) ? (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="border-green-500 text-green-600 bg-green-50 hover:bg-green-100 text-xs px-3 py-1 h-7 rounded-full"
+                                >
+                                  <Check className="h-3 w-3 mr-1" />
+                                  Added
+                                </Button>
+                              ) : (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleAddInfluencer(influencer.id, influencer.name)}
+                                  className="border-primary text-primary hover:bg-primary hover:text-white text-xs px-3 py-1 h-7 rounded-full"
+                                >
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Add
+                                </Button>
+                              )}
+                            </div>
 
-                    {/* Bio Section - Narrow Width */}
-                    <div className="mb-3 w-2/3">
-                      <p className={`text-sm text-muted-foreground overflow-hidden ${viewMode === 'grid' ? 'h-[64px]' : 'h-[20px]'}`} style={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 4,
-                        WebkitBoxOrient: 'vertical'
-                      }}>{influencer.bio}</p>
-                    </div>
-
-                    {/* Followers + Engagement Stats Row */}
-                    <div className="flex items-center justify-between text-sm text-muted-foreground mb-2 whitespace-nowrap">
-                      <div className="flex items-center space-x-1">
-                        <PlatformIcon 
-                          className="h-4 w-4" 
-                          style={{ color: platformInfo?.color || '#6B7280' }}
-                        />
-                        <span 
-                          className="font-medium"
-                          style={{ color: platformInfo?.color || '#6B7280' }}
-                        >
-                          {influencer.platform}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <span className="ml-2">{influencer.followers.toLocaleString()} followers</span>
-                        <span>{influencer.engagement_rate}% engagement</span>
-                      </div>
-                    </div>
-
-                    {/* Tags Row */}
-                    <div className="flex flex-wrap gap-1 mb-0">
-                      {influencer.topics?.map((topic) => (
-                        <Badge key={topic} variant="outline" className="text-xs">
-                          {topic}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    {/* Spacer to push Audience Match to bottom */}
-                    <div className="flex-1"></div>
-
-                    {/* Audience Match Box - Bottom, Full Width */}
-                    {influencer.audience_alignment && (
-                      <div className="p-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 mt-0.5">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-semibold text-blue-900">🎯 Audience Match</h4>
-                          <span className="text-xs text-blue-600 font-semibold">
-                            {influencer.audience_alignment.alignment_score}% match
-                          </span>
-                        </div>
-                        
-                        <div className="space-y-3 text-xs">
-                          <div className="flex items-center">
-                            <span className="font-medium text-gray-500">Company Size: </span>
-                            <span className="text-gray-700 font-medium">{influencer.audience_alignment.company_size}</span>
+                            {/* Bio/Description */}
+                            <div className="w-4/5">
+                              <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
+                                {influencer.bio || 'No bio available'}
+                              </p>
+                            </div>
+                            
+                            {/* Social Platform, Followers, Engagement */}
+                            <div className="flex items-center justify-between text-xs text-gray-500 whitespace-nowrap">
+                              <div className="flex items-center space-x-1">
+                                <PlatformIcon 
+                                  className="h-4 w-4" 
+                                  style={{ color: platformInfo?.color || '#6B7280' }}
+                                />
+                                <span 
+                                  className="font-medium"
+                                  style={{ color: platformInfo?.color || '#6B7280' }}
+                                >
+                                  {influencer.platform}
+                                </span>
+                              </div>
+                              <span>{influencer.audience_size?.toLocaleString() || 'N/A'} followers</span>
+                              <span>{influencer.engagement_rate || 'N/A'}% engagement</span>
+                            </div>
+                            
+                            {/* Tags */}
+                            <div className="flex flex-wrap gap-1">
+                              {influencer.expertise_tags?.slice(0, 3).map((tag) => (
+                                <span key={tag} className="rounded-full bg-gray-100 px-2 py-1 text-sm text-gray-600">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                          <div className="border-t border-gray-200 pt-3">
-                            <div className="flex flex-col">
-                              <span className="font-medium text-gray-500 mb-2">Roles:</span>
-                              <div className="flex flex-wrap gap-1">
-                                {influencer.audience_alignment.job_titles.slice(0, 2).map((title, idx) => (
-                                  <Badge key={idx} variant="secondary" className="text-xs bg-blue-100 text-blue-800">
-                                    {title}
-                                  </Badge>
-                                ))}
+
+                          {/* Audience Match Section */}
+                          <div className="bg-blue-50 rounded-xl p-3 mt-3 border border-blue-200">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center space-x-1">
+                                <span className="text-lg">🎯</span>
+                                <span className="text-sm font-bold text-black">Audience Match</span>
+                              </div>
+                              <span className="text-sm font-bold text-blue-600">{audienceMatch}% match</span>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-xs text-black">
+                                <span className="font-medium">Company Size:</span> {selectedCompanySize}
+                              </div>
+                              <div className="text-xs text-black">
+                                <span className="font-medium">Roles:</span> 
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {selectedRoles.map((role) => (
+                                    <span key={role} className="rounded-full bg-blue-600 text-white px-2 py-1 text-xs">
+                                      {role}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    )}
-                  </Card>
-                );
-              })}
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
               </>
@@ -741,8 +592,8 @@ const Discover = () => {
                   <div>
                     <h2 className="text-2xl font-bold mb-2">AI-Powered Intent Discovery</h2>
                     <p className="text-muted-foreground mb-6 max-w-md">
-                      Discover influencers who are actively researching or discussing topics related to your industry, 
-                      showing high purchase intent and engagement with relevant content.
+                      Discover influencers whose audiences match your target market, showing high purchase intent 
+                      and engagement with relevant content. Find the perfect influencers for your campaigns.
                     </p>
                   </div>
                   <div className="space-y-3">
@@ -766,67 +617,121 @@ const Discover = () => {
                     <h2 className="text-xl font-semibold">AI-Powered Intent Discovery</h2>
                   </div>
                   <p className="text-muted-foreground mb-6">
-                    Discover influencers who are actively researching or discussing topics related to your industry, 
-                    showing high purchase intent and engagement with relevant content.
+                    Discover influencers whose audiences match your target market, showing high purchase intent 
+                    and engagement with relevant content. Find the perfect influencers for your campaigns.
                   </p>
                 </Card>
 
             {/* Intent Results */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">
-                  {filteredInfluencers.length} High-Intent Influencers Found
-                </h3>
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    {pagination.total} Influencers Found
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Influencers with high audience alignment and purchase intent signals
+                  </p>
+                </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <TrendingUp className="h-4 w-4" />
                   <span>Sorted by intent score</span>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-                {filteredInfluencers
-                  .sort((a, b) => b.intent_score - a.intent_score)
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+                {availableInfluencers
+                  .sort((a, b) => (b.engagement_rate || 0) - (a.engagement_rate || 0))
                   .map((influencer) => {
                     const platformInfo = platformConfig[influencer.platform as keyof typeof platformConfig];
                     const PlatformIcon = platformInfo?.icon || Users;
                     
+                    // Generate mock intent data for demonstration
+                    const intentScore = Math.floor(Math.random() * 20) + 80; // 80-99%
+                    const audienceAlignment = Math.floor(Math.random() * 15) + 85; // 85-99%
+                    const recentMentions = Math.floor(Math.random() * 20) + 5; // 5-24
+                    
+                    const buyingSignals = [
+                      "Pricing inquiries",
+                      "Demo requests", 
+                      "Competitor mentions",
+                      "Product feedback requests",
+                      "Partnership discussions",
+                      "Investment inquiries",
+                      "CRM evaluations",
+                      "Sales process optimization",
+                      "Team training needs"
+                    ];
+                    
+                    const contentThemes = [
+                      "SaaS metrics",
+                      "Growth hacking", 
+                      "Customer success",
+                      "Product development",
+                      "Market research",
+                      "Growth strategies",
+                      "Sales methodology",
+                      "CRM best practices",
+                      "Sales training"
+                    ];
+                    
+                    const roles = [
+                      "VP Marketing", "CMO", "Founder", "CEO", "Sales Director", "VP Sales"
+                    ];
+                    
+                    const companySizes = [
+                      "1-100 employees", "50-500 employees", "500+ employees"
+                    ];
+                    
+                    // Randomly select some signals and themes
+                    const selectedBuyingSignals = buyingSignals
+                      .sort(() => 0.5 - Math.random())
+                      .slice(0, 3);
+                    
+                    const selectedContentThemes = contentThemes
+                      .sort(() => 0.5 - Math.random())
+                      .slice(0, 3);
+                    
+                    const selectedRoles = roles
+                      .sort(() => 0.5 - Math.random())
+                      .slice(0, 2);
+                    
+                    const selectedCompanySize = companySizes[Math.floor(Math.random() * companySizes.length)];
+                    
                     return (
-                      <Card key={influencer.id} className="pt-4 pb-6 px-6 hover:shadow-lg transition-all duration-300">
+                      <Card key={influencer.id} className="p-6 hover:shadow-lg transition-all duration-300">
                         <div className="space-y-4">
+                          {/* Header with Name and Platform */}
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                                <div className="flex items-center space-x-2">
-                                  <h3 className="font-semibold">{influencer.name}</h3>
-                                  {influencer.verified && (
-                                    <div className="h-4 w-4 rounded-full bg-primary flex items-center justify-center">
-                                      <div className="h-2 w-2 rounded-full bg-white" />
-                                    </div>
-                                  )}
-                                </div>
-                                <p className="text-sm text-muted-foreground h-16 overflow-hidden mt-3" style={{
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: 3,
-                                  WebkitBoxOrient: 'vertical'
-                                }}>{influencer.bio}</p>
-                                
-                                <div className="mt-0.5 flex items-center justify-between text-sm text-muted-foreground whitespace-nowrap">
-                                  <div className="flex items-center space-x-1">
-                                    <PlatformIcon 
-                                      className="h-4 w-4" 
-                                      style={{ color: platformInfo?.color || '#6B7280' }}
-                                    />
-                                    <span 
-                                      className="font-medium"
-                                      style={{ color: platformInfo?.color || '#6B7280' }}
-                                    >
-                                      {influencer.platform}
-                                    </span>
+                              <div className="flex items-center space-x-2 mb-2">
+                                <h3 className="font-semibold text-lg">{influencer.name}</h3>
+                                {influencer.is_verified && (
+                                  <div className="h-4 w-4 rounded-full bg-primary flex items-center justify-center">
+                                    <div className="h-2 w-2 rounded-full bg-white" />
                                   </div>
-                                  <div className="flex items-center space-x-2">
-                                    <span className="ml-2">{influencer.followers.toLocaleString()} followers</span>
-                                    <span>{influencer.engagement_rate}% engagement</span>
-                                  </div>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-3">
+                                {influencer.bio || 'No bio available'}
+                              </p>
+                              
+                              <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                                <div className="flex items-center space-x-1">
+                                  <PlatformIcon 
+                                    className="h-4 w-4" 
+                                    style={{ color: platformInfo?.color || '#6B7280' }}
+                                  />
+                                  <span 
+                                    className="font-medium"
+                                    style={{ color: platformInfo?.color || '#6B7280' }}
+                                  >
+                                    {influencer.platform}
+                                  </span>
                                 </div>
+                                <span>{influencer.audience_size?.toLocaleString() || 'N/A'} followers</span>
+                                <span>{influencer.engagement_rate || 'N/A'}% engagement</span>
+                              </div>
                             </div>
                           </div>
 
@@ -834,12 +739,12 @@ const Discover = () => {
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="text-sm font-medium">Intent Score</span>
-                              <span className="text-sm font-bold text-primary">{influencer.intent_score}%</span>
+                              <span className="text-sm font-semibold text-primary">{intentScore}%</span>
                             </div>
-                            <div className="w-full bg-muted rounded-full h-2">
+                            <div className="w-full bg-gray-200 rounded-full h-2">
                               <div 
-                                className="bg-primary h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${influencer.intent_score}%` }}
+                                className="bg-primary h-2 rounded-full transition-all duration-300" 
+                                style={{ width: `${intentScore}%` }}
                               />
                             </div>
                           </div>
@@ -848,8 +753,8 @@ const Discover = () => {
                           <div className="space-y-2">
                             <span className="text-sm font-medium">Buying Signals</span>
                             <div className="flex flex-wrap gap-1">
-                              {influencer.buying_signals?.map((signal) => (
-                                <Badge key={signal} variant="secondary" className="text-xs">
+                              {selectedBuyingSignals.map((signal) => (
+                                <Badge key={signal} variant="default" className="text-xs bg-blue-100 text-blue-800">
                                   {signal}
                                 </Badge>
                               ))}
@@ -860,7 +765,7 @@ const Discover = () => {
                           <div className="space-y-2">
                             <span className="text-sm font-medium">Content Themes</span>
                             <div className="flex flex-wrap gap-1">
-                              {influencer.content_themes?.map((theme) => (
+                              {selectedContentThemes.map((theme) => (
                                 <Badge key={theme} variant="outline" className="text-xs">
                                   {theme}
                                 </Badge>
@@ -868,28 +773,26 @@ const Discover = () => {
                             </div>
                           </div>
 
-                          {/* Audience Alignment */}
-                          {influencer.audience_alignment && (
-                            <div className="space-y-2">
-                              <span className="text-sm font-medium">Audience Match</span>
-                              <div className="p-2 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-xs font-medium text-green-800">Audience Alignment</span>
-                                  <span className="text-xs font-bold text-green-600">
-                                    {influencer.audience_alignment.alignment_score}%
-                                  </span>
-                                </div>
-                                <div className="text-xs text-gray-600">
-                                  <div>Roles: {influencer.audience_alignment.job_titles.slice(0, 2).join(', ')}</div>
-                                  <div>Size: {influencer.audience_alignment.company_size}</div>
-                                </div>
+                          {/* Audience Match */}
+                          <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium">Audience Alignment</span>
+                              <span className="text-sm font-semibold text-green-600">{audienceAlignment}%</span>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-xs text-muted-foreground">
+                                <span className="font-medium">Roles:</span> {selectedRoles.join(', ')}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                <span className="font-medium">Size:</span> {selectedCompanySize}
                               </div>
                             </div>
-                          )}
+                          </div>
 
-                          <div className="flex items-center justify-between pt-4">
+                          {/* Footer */}
+                          <div className="flex items-center justify-between pt-2">
                             <div className="text-sm text-muted-foreground">
-                              {influencer.recent_mentions} recent mentions
+                              {recentMentions} recent mentions
                             </div>
                             <div className="flex items-center space-x-2">
                               <Button 
@@ -925,6 +828,7 @@ const Discover = () => {
                               )}
                             </div>
                           </div>
+
                         </div>
                       </Card>
                     );
@@ -1014,12 +918,107 @@ const Discover = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Load More */}
-        <div className="flex justify-center">
-          <Button variant="outline" size="lg">
-            Load More Results
-          </Button>
-        </div>
+        {/* Pagination Controls */}
+        {pagination.total_pages > 1 && (
+          <div className="flex justify-center items-center space-x-2 py-6 bg-gray-50 rounded-lg px-4">
+            <Button 
+              variant="outline" 
+              size="sm"
+              disabled={!pagination.has_prev}
+              onClick={handlePreviousPage}
+            >
+              Previous
+            </Button>
+            
+            {/* Page Numbers */}
+            <div className="flex items-center space-x-1">
+              {(() => {
+                const pages = [];
+                const currentPage = pagination.page;
+                const totalPages = pagination.total_pages;
+                
+                // Show more page numbers around current page
+                const showPages = 5; // Number of page numbers to show
+                let startPage = Math.max(1, currentPage - Math.floor(showPages / 2));
+                let endPage = Math.min(totalPages, startPage + showPages - 1);
+                
+                // Adjust start if we're near the end
+                if (endPage - startPage < showPages - 1) {
+                  startPage = Math.max(1, endPage - showPages + 1);
+                }
+                
+                // Show first page and ellipsis if needed
+                if (startPage > 1) {
+                  pages.push(
+                    <Button
+                      key={1}
+                      variant={currentPage === 1 ? "default" : "outline"}
+                      size="sm"
+                      className="w-8 h-8"
+                      onClick={() => handlePageChange(1)}
+                    >
+                      1
+                    </Button>
+                  );
+                  
+                  if (startPage > 2) {
+                    pages.push(
+                      <span key="ellipsis1" className="px-2 text-muted-foreground">...</span>
+                    );
+                  }
+                }
+                
+                // Show page numbers around current page
+                for (let i = startPage; i <= endPage; i++) {
+                  pages.push(
+                    <Button
+                      key={i}
+                      variant={currentPage === i ? "default" : "outline"}
+                      size="sm"
+                      className="w-8 h-8"
+                      onClick={() => handlePageChange(i)}
+                    >
+                      {i}
+                    </Button>
+                  );
+                }
+                
+                // Show ellipsis and last page if needed
+                if (endPage < totalPages) {
+                  if (endPage < totalPages - 1) {
+                    pages.push(
+                      <span key="ellipsis2" className="px-2 text-muted-foreground">...</span>
+                    );
+                  }
+                  
+                  pages.push(
+                    <Button
+                      key={totalPages}
+                      variant={currentPage === totalPages ? "default" : "outline"}
+                      size="sm"
+                      className="w-8 h-8"
+                      onClick={() => handlePageChange(totalPages)}
+                    >
+                      {totalPages}
+                    </Button>
+                  );
+                }
+                
+                return pages;
+              })()}
+            </div>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              disabled={!pagination.has_next}
+              onClick={handleNextPage}
+            >
+              Next
+            </Button>
+            
+          </div>
+        )}
 
         <DeveloperPanel />
       </div>

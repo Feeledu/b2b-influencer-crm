@@ -148,15 +148,23 @@ async def list_users_analytics(
                 last_activity=user.get("last_activity")
             ))
         
+        # Calculate pagination info
+        total_pages = (total + limit - 1) // limit
+        has_next = page < total_pages
+        has_prev = page > 1
+        
+        logger.info(f"Returning {len(users_data)} user analytics, page {page}/{total_pages}, total: {total}")
+        
         return PaginatedResponse(
             success=True,
             message="User analytics retrieved successfully",
-            data=users_data,
+            data=[user.model_dump() for user in users_data],
             total=total,
             page=page,
-            size=limit,
-            has_next=offset + limit < total,
-            has_prev=page > 1
+            limit=limit,
+            total_pages=total_pages,
+            has_next=has_next,
+            has_prev=has_prev
         )
         
     except HTTPException:

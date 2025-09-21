@@ -184,11 +184,43 @@ export const useInfluencerActions = () => {
     }
   }, []);
 
+  const updateRelationshipStrength = useCallback(async (influencerId: string, strength: number) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await apiService.updateRelationshipStrength(influencerId, strength);
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update relationship strength');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const setFollowUpDate = useCallback(async (influencerId: string, date: Date) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await apiService.setFollowUpDate(influencerId, date);
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to set follow-up date');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     addToMyList,
     removeFromMyList,
     updateInfluencer,
     checkSavedStatus,
+    updateRelationshipStrength,
+    setFollowUpDate,
     loading,
     error,
   };

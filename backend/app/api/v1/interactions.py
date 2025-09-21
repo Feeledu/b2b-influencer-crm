@@ -135,15 +135,23 @@ async def list_interactions(
         count_result = count_query.execute()
         total = count_result.count or 0
         
+        # Calculate pagination info
+        total_pages = (total + limit - 1) // limit
+        has_next = page < total_pages
+        has_prev = page > 1
+        
+        logger.info(f"Returning {len(result.data or [])} interactions, page {page}/{total_pages}, total: {total}")
+        
         return PaginatedResponse(
             success=True,
             message="Interactions retrieved successfully",
             data=result.data or [],
             total=total,
             page=page,
-            size=limit,
-            has_next=offset + limit < total,
-            has_prev=page > 1
+            limit=limit,
+            total_pages=total_pages,
+            has_next=has_next,
+            has_prev=has_prev
         )
         
     except Exception as e:

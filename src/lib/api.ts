@@ -569,7 +569,19 @@ class ApiService {
   }
 
   async checkSavedStatus(influencerId: string): Promise<{ is_saved: boolean; relationship?: UserInfluencer }> {
-    return this.request<{ is_saved: boolean; relationship?: UserInfluencer }>(`/influencers/${influencerId}/saved-status`);
+    return this.request<{ is_saved: boolean; relationship?: UserInfluencer }>(`/influencers/check-saved/${influencerId}`);
+  }
+
+  async updateRelationshipStrength(influencerId: string, strength: number): Promise<ApiResponse> {
+    return this.request<ApiResponse>(`/influencers/${influencerId}/relationship?strength=${strength}`, {
+      method: 'PUT',
+    });
+  }
+
+  async setFollowUpDate(influencerId: string, date: Date): Promise<ApiResponse> {
+    return this.request<ApiResponse>(`/influencers/${influencerId}/follow-up?follow_up_date=${date.toISOString()}`, {
+      method: 'PUT',
+    });
   }
 
   // Campaign endpoints

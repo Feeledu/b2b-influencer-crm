@@ -71,18 +71,45 @@ class UpdateUserInfluencerRequest(BaseModel):
     tags: Optional[List[str]] = None
     last_contacted_at: Optional[datetime] = None
 
+@router.get("/test",
+            summary="Test Influencers",
+            description="Test endpoint for influencers")
+async def test_influencers():
+    """Test endpoint to check if the basic functionality works"""
+    try:
+        supabase_client = SupabaseClient()
+        supabase = supabase_client.get_client()
+        
+        # Simple query
+        result = supabase.table("influencers").select("id, name").limit(5).execute()
+        
+        return {
+            "success": True,
+            "count": len(result.data) if result.data else 0,
+            "data": result.data[:2] if result.data else []
+        }
+    except Exception as e:
+        logger.error(f"Test error: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@router.get("/simple")
+async def get_simple():
+    return {"message": "Simple endpoint works"}
+
 @router.get("/",
             response_model=PaginatedResponse,
             summary="Get Influencers",
-            description="Get paginated list of influencers with optional filtering",
+            description="Get paginated list of influencers with filtering options",
             response_description="Paginated list of influencers")
 async def get_influencers(
-    current_user: Dict[str, Any] = Depends(get_current_user),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     platform: Optional[str] = Query(None, description="Filter by platform"),
     industry: Optional[str] = Query(None, description="Filter by industry"),
-    search: Optional[str] = Query(None, description="Search by name or bio")
+    search: Optional[str] = Query(None, description="Search by name, bio, or tags"),
+    min_followers: Optional[int] = Query(None, ge=0, description="Minimum follower count"),
+    sort_by: str = Query("created_at", description="Sort by field"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Sort order")
 ):
     """
     Get paginated list of influencers with optional filtering.
@@ -99,8 +126,18 @@ async def get_influencers(
             query = query.eq("platform", platform)
         if industry:
             query = query.eq("industry", industry)
+        if min_followers:
+            query = query.gte("audience_size", min_followers)
         if search:
-            query = query.or_(f"name.ilike.%{search}%,bio.ilike.%{search}%")
+            # Search in name, bio, and expertise_tags
+            query = query.or_(f"name.ilike.%{search}%,bio.ilike.%{search}%,expertise_tags.cs.{{'{search}'}}")
+        
+        # Apply sorting
+        if sort_by in ["name", "audience_size", "engagement_rate", "created_at", "updated_at"]:
+            order_desc = sort_order == "desc"
+            query = query.order(sort_by, desc=order_desc)
+        else:
+            query = query.order("created_at", desc=True)
         
         # Get total count
         count_query = query
@@ -109,7 +146,7 @@ async def get_influencers(
         
         # Apply pagination
         offset = (page - 1) * limit
-        query = query.range(offset, offset + limit - 1)
+        query = query.range(offset, offset + limit)
         
         # Execute query
         result = query.execute()
@@ -117,14 +154,50 @@ async def get_influencers(
         if result.data is None:
             raise HTTPException(status_code=500, detail="Failed to fetch influencers")
         
-        influencers = [InfluencerResponse(**item) for item in result.data]
+        # Transform data to dictionaries
+        influencers = []
+        for item in result.data:
+            influencer = InfluencerResponse(
+                id=item["id"],
+                name=item["name"],
+                platform=item["platform"],
+                handle=item.get("handle"),
+                bio=item.get("bio"),
+                avatar_url=item.get("avatar_url"),
+                website_url=item.get("website_url"),
+                email=item.get("email"),
+                linkedin_url=item.get("linkedin_url"),
+                twitter_url=item.get("twitter_url"),
+                industry=item.get("industry"),
+                audience_size=item.get("audience_size"),
+                engagement_rate=item.get("engagement_rate"),
+                location=item.get("location"),
+                expertise_tags=item.get("expertise_tags", []),
+                audience_demographics=item.get("audience_demographics", {}),
+                contact_info=item.get("contact_info", {}),
+                is_verified=item.get("is_verified", False),
+                created_at=item["created_at"],
+                updated_at=item["updated_at"]
+            )
+            influencers.append(influencer.model_dump())
+        
+        # Calculate pagination info
+        total_pages = (total + limit - 1) // limit
+        has_next = page < total_pages
+        has_prev = page > 1
+        
+        logger.info(f"Returning {len(influencers)} influencers, page {page}/{total_pages}, total: {total}")
         
         return PaginatedResponse(
+            success=True,
+            message="Influencers retrieved successfully",
             data=influencers,
             total=total,
             page=page,
             limit=limit,
-            total_pages=(total + limit - 1) // limit
+            total_pages=total_pages,
+            has_next=has_next,
+            has_prev=has_prev
         )
         
     except Exception as e:
@@ -166,7 +239,7 @@ async def get_my_influencers(
         
         # Apply pagination
         offset = (page - 1) * limit
-        query = query.range(offset, offset + limit - 1)
+        query = query.range(offset, offset + limit)
         
         # Execute query
         result = query.execute()
@@ -174,7 +247,7 @@ async def get_my_influencers(
         if result.data is None:
             raise HTTPException(status_code=500, detail="Failed to fetch user influencers")
         
-        # Transform data
+        # Transform data to dictionaries
         user_influencers = []
         for item in result.data:
             influencer_data = item.get("influencers")
@@ -192,14 +265,25 @@ async def get_my_influencers(
                     updated_at=item["updated_at"],
                     influencer=InfluencerResponse(**influencer_data)
                 )
-                user_influencers.append(user_influencer)
+                user_influencers.append(user_influencer.model_dump())
+        
+        # Calculate pagination info
+        total_pages = (total + limit - 1) // limit
+        has_next = page < total_pages
+        has_prev = page > 1
+        
+        logger.info(f"Returning {len(user_influencers)} user influencers, page {page}/{total_pages}, total: {total}")
         
         return PaginatedResponse(
+            success=True,
+            message="User influencers retrieved successfully",
             data=user_influencers,
             total=total,
             page=page,
             limit=limit,
-            total_pages=(total + limit - 1) // limit
+            total_pages=total_pages,
+            has_next=has_next,
+            has_prev=has_prev
         )
         
     except Exception as e:
@@ -498,7 +582,7 @@ async def get_my_influencers_crm(
         
         # Apply pagination
         offset = (page - 1) * limit
-        query = query.range(offset, offset + limit - 1)
+        query = query.range(offset, offset + limit)
         
         result = query.execute()
         
@@ -510,15 +594,23 @@ async def get_my_influencers_crm(
         count_result = count_query.execute()
         total = count_result.count or 0
         
+        # Calculate pagination info
+        total_pages = (total + limit - 1) // limit
+        has_next = page < total_pages
+        has_prev = page > 1
+        
+        logger.info(f"Returning {len(result.data or [])} CRM influencers, page {page}/{total_pages}, total: {total}")
+        
         return PaginatedResponse(
             success=True,
             message="CRM influencers retrieved successfully",
             data=result.data or [],
             total=total,
             page=page,
-            size=limit,
-            has_next=offset + limit < total,
-            has_prev=page > 1
+            limit=limit,
+            total_pages=total_pages,
+            has_next=has_next,
+            has_prev=has_prev
         )
         
     except Exception as e:

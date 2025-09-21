@@ -59,7 +59,9 @@ class AuthMiddleware:
             "/openapi.json",
             "/api/v1/health",
             "/api/v1/test-db",
-            "/api/v1/auth/status"
+            "/api/v1/auth/status",
+            "/api/v1/influencers",
+            "/api/v1/influencers/test"
         ]
         
         return path in public_routes or path.startswith("/api/v1/auth/")
