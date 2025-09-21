@@ -490,7 +490,7 @@ const Discover = () => {
             {/* Results Grid */}
             {!loading && !error && (
               <>
-                {availableInfluencers.length === 0 ? (
+                {influencers.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                       <Search className="h-6 w-6 text-gray-400" />
@@ -511,7 +511,7 @@ const Discover = () => {
                   </div>
                 ) : viewMode === "grid" ? (
                   <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-                    {availableInfluencers.map((influencer) => {
+                    {influencers.map((influencer) => {
                       const platformInfo = platformConfig[influencer.platform as keyof typeof platformConfig];
                       const PlatformIcon = platformInfo?.icon || Users;
                       
@@ -616,7 +616,7 @@ const Discover = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {availableInfluencers.map((influencer) => {
+                    {influencers.map((influencer) => {
                       const platformInfo = platformConfig[influencer.platform as keyof typeof platformConfig];
                       const PlatformIcon = platformInfo?.icon || Users;
                       
@@ -780,6 +780,9 @@ const Discover = () => {
                   <p className="text-sm text-muted-foreground">
                     Influencers with high audience alignment and purchase intent signals
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Showing {((pagination.page - 1) * pagination.limit) + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
+                  </p>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <TrendingUp className="h-4 w-4" />
@@ -788,7 +791,7 @@ const Discover = () => {
               </div>
               
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
-                {availableInfluencers
+                {influencers
                   .sort((a, b) => (b.engagement_rate || 0) - (a.engagement_rate || 0))
                   .map((influencer) => {
                     const platformInfo = platformConfig[influencer.platform as keyof typeof platformConfig];
@@ -821,14 +824,14 @@ const Discover = () => {
                                   </div>
                                 )}
                               </div>
-                              <p className="text-sm text-muted-foreground mb-3">
+                              <p className="text-sm text-muted-foreground mb-3 h-[90px] overflow-hidden">
                                 {influencer.bio || 'No bio available'}
                               </p>
                               
-                              <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                              <div className="flex items-center justify-between w-full text-xs text-muted-foreground">
                                 <div className="flex items-center space-x-1">
                                   <PlatformIcon 
-                                    className="h-4 w-4" 
+                                    className="h-3 w-3" 
                                     style={{ color: platformInfo?.color || '#6B7280' }}
                                   />
                                   <span 
@@ -919,19 +922,19 @@ const Discover = () => {
                                   variant="outline" 
                                   size="sm"
                                   onClick={() => handleRemoveInfluencer(influencer.id, influencer.name)}
-                                  className="border-green-500 text-green-600 hover:bg-green-50"
+                                  className="border-green-500 text-green-600 bg-green-50 hover:bg-green-100 text-xs px-3 py-1 h-7 rounded-full"
                                 >
-                                  <Check className="h-4 w-4 mr-1" />
+                                  <Check className="h-3 w-3 mr-1" />
                                   Added
                                 </Button>
                               ) : (
                                 <Button 
-                                  variant="default" 
+                                  variant="outline" 
                                   size="sm"
                                   onClick={() => handleAddInfluencer(influencer.id, influencer.name)}
-                                  className="bg-primary hover:bg-primary/90 text-white"
+                                  className="border-primary text-primary hover:bg-primary hover:text-white text-xs px-3 py-1 h-7 rounded-full"
                                 >
-                                  <Plus className="h-4 w-4 mr-1" />
+                                  <Plus className="h-3 w-3 mr-1" />
                                   Add
                                 </Button>
                               )}
@@ -944,6 +947,90 @@ const Discover = () => {
                   })}
               </div>
             </div>
+
+            {/* Pagination Controls for Intent Discovery */}
+            {pagination.total_pages > 1 && (
+              <div className="flex justify-center items-center space-x-2 py-6 bg-gray-50 rounded-lg px-4">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  disabled={!pagination.has_prev}
+                  onClick={handlePreviousPage}
+                >
+                  Previous
+                </Button>
+                
+                {/* Page Numbers */}
+                <div className="flex items-center space-x-1">
+                  {(() => {
+                    const pages = [];
+                    const currentPage = pagination.page;
+                    const totalPages = pagination.total_pages;
+                    
+                    // Always show first page
+                    if (currentPage > 3) {
+                      pages.push(
+                        <Button
+                          key={1}
+                          variant={currentPage === 1 ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(1)}
+                        >
+                          1
+                        </Button>
+                      );
+                      if (currentPage > 4) {
+                        pages.push(<span key="ellipsis1" className="px-2">...</span>);
+                      }
+                    }
+                    
+                    // Show pages around current page
+                    for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+                      if (i !== 1 || currentPage <= 3) { // Don't duplicate first page
+                        pages.push(
+                          <Button
+                            key={i}
+                            variant={currentPage === i ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(i)}
+                          >
+                            {i}
+                          </Button>
+                        );
+                      }
+                    }
+                    
+                    // Always show last page
+                    if (currentPage < totalPages - 2) {
+                      if (currentPage < totalPages - 3) {
+                        pages.push(<span key="ellipsis2" className="px-2">...</span>);
+                      }
+                      pages.push(
+                        <Button
+                          key={totalPages}
+                          variant={currentPage === totalPages ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(totalPages)}
+                        >
+                          {totalPages}
+                        </Button>
+                      );
+                    }
+                    
+                    return pages;
+                  })()}
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  disabled={!pagination.has_next}
+                  onClick={handleNextPage}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
               </>
             )}
           </TabsContent>
