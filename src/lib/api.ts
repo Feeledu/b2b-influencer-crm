@@ -36,7 +36,11 @@ interface Influencer {
   engagement_rate?: number;
   location?: string;
   expertise_tags?: string[];
-  audience_demographics?: Record<string, any>;
+  audience_demographics?: {
+    age_groups?: Record<string, number>;
+    locations?: Record<string, number>;
+    job_titles?: Record<string, number> | string[];
+  };
   contact_info?: Record<string, any>;
   is_verified: boolean;
   created_at: string;

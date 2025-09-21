@@ -525,7 +525,17 @@ const Discover = () => {
                       const audienceMatch = influencer.audience_alignment?.alignment_score 
                         ? Math.round(influencer.audience_alignment.alignment_score) 
                         : 0; // No fallback - show 0 if missing
-                      const roles = influencer.audience_demographics?.job_titles ? Object.keys(influencer.audience_demographics.job_titles) : [];
+                      // Handle both array and object formats for job_titles
+                      let roles: string[] = [];
+                      if (influencer.audience_demographics?.job_titles) {
+                        if (Array.isArray(influencer.audience_demographics.job_titles)) {
+                          // If it's an array, use it directly
+                          roles = influencer.audience_demographics.job_titles;
+                        } else if (typeof influencer.audience_demographics.job_titles === 'object') {
+                          // If it's an object, get the keys (role names)
+                          roles = Object.keys(influencer.audience_demographics.job_titles);
+                        }
+                      }
                       const companySize = influencer.audience_alignment?.company_size || '';
                       
                       return (
@@ -630,7 +640,17 @@ const Discover = () => {
                       const audienceMatch = influencer.audience_alignment?.alignment_score 
                         ? Math.round(influencer.audience_alignment.alignment_score) 
                         : 0; // No fallback - show 0 if missing
-                      const roles = influencer.audience_demographics?.job_titles ? Object.keys(influencer.audience_demographics.job_titles) : [];
+                      // Handle both array and object formats for job_titles
+                      let roles: string[] = [];
+                      if (influencer.audience_demographics?.job_titles) {
+                        if (Array.isArray(influencer.audience_demographics.job_titles)) {
+                          // If it's an array, use it directly
+                          roles = influencer.audience_demographics.job_titles;
+                        } else if (typeof influencer.audience_demographics.job_titles === 'object') {
+                          // If it's an object, get the keys (role names)
+                          roles = Object.keys(influencer.audience_demographics.job_titles);
+                        }
+                      }
                       const companySize = influencer.audience_alignment?.company_size || '';
                       
                       return (
