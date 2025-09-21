@@ -833,7 +833,17 @@ const Discover = () => {
                     // Use real data from database - no fallbacks
                     const selectedBuyingSignals = influencer.buying_signals?.slice(0, 3) || [];
                     const selectedContentThemes = influencer.content_themes?.slice(0, 3) || [];
-                    const selectedRoles = influencer.audience_demographics?.job_titles ? Object.keys(influencer.audience_demographics.job_titles).slice(0, 2) : [];
+                    // Handle both array and object formats for job_titles
+                    let selectedRoles: string[] = [];
+                    if (influencer.audience_demographics?.job_titles) {
+                      if (Array.isArray(influencer.audience_demographics.job_titles)) {
+                        // If it's an array, use it directly
+                        selectedRoles = influencer.audience_demographics.job_titles.slice(0, 2);
+                      } else if (typeof influencer.audience_demographics.job_titles === 'object') {
+                        // If it's an object, get the keys (role names)
+                        selectedRoles = Object.keys(influencer.audience_demographics.job_titles).slice(0, 2);
+                      }
+                    }
                     const selectedCompanySize = influencer.audience_alignment?.company_size || '';
                     
                     return (
