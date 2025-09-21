@@ -467,8 +467,8 @@ const Discover = () => {
                       Clear Filters
                     </Button>
                   </div>
-                ) : (
-                  <div className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1"}`}>
+                ) : viewMode === "grid" ? (
+                  <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                     {availableInfluencers.map((influencer) => {
                       const platformInfo = platformConfig[influencer.platform as keyof typeof platformConfig];
                       const PlatformIcon = platformInfo?.icon || Users;
@@ -485,7 +485,7 @@ const Discover = () => {
                       const selectedCompanySize = companySizes[Math.floor(Math.random() * companySizes.length)];
                       
                       return (
-                        <Card key={influencer.id} className={`bg-white rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 flex flex-col justify-between ${viewMode === 'grid' ? 'h-[380px]' : 'h-[200px]'}`}>
+                        <Card key={influencer.id} className="bg-white rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 flex flex-col justify-between h-[380px]">
                           <div className="space-y-3">
                             {/* Header with Name and Add Button */}
                             <div className="flex items-center justify-between">
@@ -568,6 +568,120 @@ const Discover = () => {
                                       {role}
                                     </span>
                                   ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {availableInfluencers.map((influencer) => {
+                      const platformInfo = platformConfig[influencer.platform as keyof typeof platformConfig];
+                      const PlatformIcon = platformInfo?.icon || Users;
+                      
+                      // Generate mock audience match data
+                      const audienceMatch = Math.floor(Math.random() * 20) + 70; // 70-89%
+                      const roles = ["VP Marketing", "CMO", "Product Manager", "UX Designer", "Marketing Director", "Demand Gen Manager"];
+                      const companySizes = ["10-100 employees", "50-500 employees", "100-1000 employees"];
+                      
+                      const selectedRoles = roles
+                        .sort(() => 0.5 - Math.random())
+                        .slice(0, 2);
+                      
+                      const selectedCompanySize = companySizes[Math.floor(Math.random() * companySizes.length)];
+                      
+                      return (
+                        <Card key={influencer.id} className="bg-white rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 h-[320px]">
+                          <div className="flex h-full">
+                            {/* Left side - Main content */}
+                            <div className="flex-1 flex flex-col justify-between">
+                              <div className="space-y-3">
+                                {/* Header with Name and Add Button */}
+                                <div className="flex items-center justify-between">
+                                  <h3 className="font-bold text-lg text-gray-900">{influencer.name}</h3>
+                                  {isInfluencerAdded(influencer.id) ? (
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      className="border-green-500 text-green-600 bg-green-50 hover:bg-green-100 text-xs px-3 py-1 h-7 rounded-full"
+                                    >
+                                      <Check className="h-3 w-3 mr-1" />
+                                      Added
+                                    </Button>
+                                  ) : (
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => handleAddInfluencer(influencer.id, influencer.name)}
+                                      className="border-primary text-primary hover:bg-primary hover:text-white text-xs px-3 py-1 h-7 rounded-full"
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Add
+                                    </Button>
+                                  )}
+                                </div>
+
+                                {/* Bio/Description */}
+                                <div className="w-4/5">
+                                  <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
+                                    {influencer.bio || 'No bio available'}
+                                  </p>
+                                </div>
+                                
+                                {/* Social Platform, Followers, Engagement */}
+                                <div className="flex items-center justify-between text-xs text-gray-500 whitespace-nowrap">
+                                  <div className="flex items-center space-x-1">
+                                    <PlatformIcon 
+                                      className="h-4 w-4" 
+                                      style={{ color: platformInfo?.color || '#6B7280' }}
+                                    />
+                                    <span 
+                                      className="font-medium"
+                                      style={{ color: platformInfo?.color || '#6B7280' }}
+                                    >
+                                      {influencer.platform}
+                                    </span>
+                                  </div>
+                                  <span>{influencer.audience_size?.toLocaleString() || 'N/A'} followers</span>
+                                  <span>{influencer.engagement_rate || 'N/A'}% engagement</span>
+                                </div>
+                                
+                                {/* Tags */}
+                                <div className="flex flex-wrap gap-1">
+                                  {influencer.expertise_tags?.slice(0, 3).map((tag) => (
+                                    <span key={tag} className="rounded-full bg-gray-100 px-2 py-1 text-sm text-gray-600">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Audience Match Section */}
+                              <div className="bg-blue-50 rounded-xl p-3 mt-3 border border-blue-200">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center space-x-1">
+                                    <span className="text-lg">🎯</span>
+                                    <span className="text-sm font-bold text-black">Audience Match</span>
+                                  </div>
+                                  <span className="text-sm font-bold text-blue-600">{audienceMatch}% match</span>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="text-xs text-black">
+                                    <span className="font-medium">Company Size:</span> {selectedCompanySize}
+                                  </div>
+                                  <div className="text-xs text-black">
+                                    <span className="font-medium">Roles:</span> 
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {selectedRoles.map((role) => (
+                                        <span key={role} className="rounded-full bg-blue-600 text-white px-2 py-1 text-xs">
+                                          {role}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             </div>
