@@ -516,11 +516,11 @@ const Discover = () => {
                       const PlatformIcon = platformInfo?.icon || Users;
                       
                       // Use real audience demographics from database
-                      const audienceMatch = influencer.audience_demographics?.buyer_alignment_score 
-                        ? Math.round(influencer.audience_demographics.buyer_alignment_score) 
+                      const audienceMatch = influencer.audience_alignment?.alignment_score 
+                        ? Math.round(influencer.audience_alignment.alignment_score) 
                         : 75; // Default fallback
-                      const roles = influencer.audience_demographics?.job_titles || ["Marketing Manager", "VP Marketing"];
-                      const companySize = influencer.audience_demographics?.company_size || "50-500 employees";
+                      const roles = influencer.audience_demographics?.job_titles ? Object.keys(influencer.audience_demographics.job_titles) : ["Marketing Manager", "VP Marketing"];
+                      const companySize = influencer.audience_alignment?.company_size || "50-500 employees";
                       
                       return (
                         <Card key={influencer.id} className="bg-white rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 flex flex-col justify-between h-[380px]">
@@ -621,11 +621,11 @@ const Discover = () => {
                       const PlatformIcon = platformInfo?.icon || Users;
                       
                       // Use real audience demographics from database
-                      const audienceMatch = influencer.audience_demographics?.buyer_alignment_score 
-                        ? Math.round(influencer.audience_demographics.buyer_alignment_score) 
+                      const audienceMatch = influencer.audience_alignment?.alignment_score 
+                        ? Math.round(influencer.audience_alignment.alignment_score) 
                         : 75; // Default fallback
-                      const roles = influencer.audience_demographics?.job_titles || ["Marketing Manager", "VP Marketing"];
-                      const companySize = influencer.audience_demographics?.company_size || "50-500 employees";
+                      const roles = influencer.audience_demographics?.job_titles ? Object.keys(influencer.audience_demographics.job_titles) : ["Marketing Manager", "VP Marketing"];
+                      const companySize = influencer.audience_alignment?.company_size || "50-500 employees";
                       
                       return (
                         <Card key={influencer.id} className="bg-white rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 h-[320px]">
@@ -795,19 +795,17 @@ const Discover = () => {
                     const PlatformIcon = platformInfo?.icon || Users;
                     
                     // Use real data from database or show placeholder for intent features
-                    const intentScore = influencer.audience_demographics?.buyer_alignment_score 
-                      ? Math.round(influencer.audience_demographics.buyer_alignment_score) 
+                    const intentScore = influencer.intent_score || 85; // Default fallback
+                    const audienceAlignment = influencer.audience_alignment?.alignment_score 
+                      ? Math.round(influencer.audience_alignment.alignment_score) 
                       : 85; // Default fallback
-                    const audienceAlignment = influencer.audience_demographics?.buyer_alignment_score 
-                      ? Math.round(influencer.audience_demographics.buyer_alignment_score) 
-                      : 85; // Default fallback
-                    const recentMentions = 0; // This would come from real analytics data
+                    const recentMentions = influencer.recent_mentions || 0; // This would come from real analytics data
                     
                     // Use real expertise tags or show placeholder
-                    const selectedBuyingSignals = influencer.expertise_tags?.slice(0, 3) || ["Content Marketing", "Growth Strategy", "B2B Sales"];
-                    const selectedContentThemes = influencer.expertise_tags?.slice(0, 3) || ["Industry Insights", "Best Practices", "Trends"];
-                    const selectedRoles = influencer.audience_demographics?.job_titles?.slice(0, 2) || ["Marketing Manager", "VP Marketing"];
-                    const selectedCompanySize = influencer.audience_demographics?.company_size || "50-500 employees";
+                    const selectedBuyingSignals = influencer.buying_signals?.slice(0, 3) || ["Content Marketing", "Growth Strategy", "B2B Sales"];
+                    const selectedContentThemes = influencer.content_themes?.slice(0, 3) || ["Industry Insights", "Best Practices", "Trends"];
+                    const selectedRoles = influencer.audience_demographics?.job_titles ? Object.keys(influencer.audience_demographics.job_titles).slice(0, 2) : ["Marketing Manager", "VP Marketing"];
+                    const selectedCompanySize = influencer.audience_alignment?.company_size || "50-500 employees";
                     
                     return (
                       <Card key={influencer.id} className="p-6 hover:shadow-lg transition-all duration-300">
@@ -1023,9 +1021,9 @@ const Discover = () => {
                 <h3 className="font-semibold mb-2">Audience Alignment</h3>
                 <div className="space-y-2">
                   {(() => {
-                    const highAlignment = influencers.filter(inf => (inf.audience_demographics?.buyer_alignment_score || 0) >= 90).length;
-                    const mediumAlignment = influencers.filter(inf => (inf.audience_demographics?.buyer_alignment_score || 0) >= 70 && (inf.audience_demographics?.buyer_alignment_score || 0) < 90).length;
-                    const lowAlignment = influencers.filter(inf => (inf.audience_demographics?.buyer_alignment_score || 0) < 70).length;
+                    const highAlignment = influencers.filter(inf => (inf.audience_alignment?.alignment_score || 0) >= 90).length;
+                    const mediumAlignment = influencers.filter(inf => (inf.audience_alignment?.alignment_score || 0) >= 70 && (inf.audience_alignment?.alignment_score || 0) < 90).length;
+                    const lowAlignment = influencers.filter(inf => (inf.audience_alignment?.alignment_score || 0) < 70).length;
                     
                     return (
                       <>

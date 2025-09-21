@@ -41,6 +41,17 @@ interface Influencer {
   is_verified: boolean;
   created_at: string;
   updated_at: string;
+  // New fields from database
+  intent_score?: number;
+  recent_mentions?: number;
+  buying_signals?: string[];
+  content_themes?: string[];
+  audience_alignment?: {
+    industries?: string[];
+    job_titles?: string[];
+    company_size?: string;
+    alignment_score?: number;
+  };
 }
 
 interface UserInfluencer {
