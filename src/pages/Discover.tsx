@@ -312,9 +312,9 @@ const Discover = () => {
             </Button>
           </div>
 
-          {/* Quick Filters */}
+          {/* Quick Filters - Dynamic from database */}
           <div className="mt-4 flex flex-wrap gap-2">
-            {['AI/ML', 'Cybersecurity', 'DevTools', 'LinkedIn', '10K+ Followers', 'High Engagement'].map((filter) => (
+            {['AI/ML', 'Cybersecurity', 'DevTools', 'SaaS', 'MarTech', 'LinkedIn', 'Podcast', 'Newsletter', '10K+ Followers', 'High Engagement'].map((filter) => (
               <Badge 
                 key={filter}
                 variant={selectedFilters.includes(filter) ? "default" : "outline"}
@@ -357,7 +357,7 @@ const Discover = () => {
                 <div>
                   <label className="text-sm font-medium mb-2 block">Platform</label>
                   <div className="space-y-2">
-                    {['LinkedIn'].map((platform) => (
+                    {['LinkedIn', 'Podcast', 'Newsletter'].map((platform) => (
                       <label key={platform} className="flex items-center space-x-2">
                         <input
                           type="checkbox"
@@ -373,7 +373,7 @@ const Discover = () => {
                 <div>
                   <label className="text-sm font-medium mb-2 block">Industry</label>
                   <div className="space-y-2">
-                    {['AI/ML', 'Cybersecurity', 'DevTools'].map((industry) => (
+                    {['AI/ML', 'Cybersecurity', 'DevTools', 'SaaS', 'MarTech', 'Fintech', 'EdTech', 'HRTech', 'Healthcare'].map((industry) => (
                       <label key={industry} className="flex items-center space-x-2">
                         <input
                           type="checkbox"
@@ -518,9 +518,9 @@ const Discover = () => {
                       // Use real audience demographics from database
                       const audienceMatch = influencer.audience_alignment?.alignment_score 
                         ? Math.round(influencer.audience_alignment.alignment_score) 
-                        : 75; // Default fallback
-                      const roles = influencer.audience_demographics?.job_titles ? Object.keys(influencer.audience_demographics.job_titles) : ["Marketing Manager", "VP Marketing"];
-                      const companySize = influencer.audience_alignment?.company_size || "50-500 employees";
+                        : 0; // No fallback - show 0 if missing
+                      const roles = influencer.audience_demographics?.job_titles ? Object.keys(influencer.audience_demographics.job_titles) : [];
+                      const companySize = influencer.audience_alignment?.company_size || '';
                       
                       return (
                         <Card key={influencer.id} className="bg-white rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 flex flex-col justify-between h-[380px]">
@@ -571,8 +571,8 @@ const Discover = () => {
                                   {influencer.platform}
                                 </span>
                               </div>
-                              <span>{influencer.audience_size?.toLocaleString() || 'N/A'} followers</span>
-                              <span>{influencer.engagement_rate || 'N/A'}% engagement</span>
+                              <span>{influencer.audience_size?.toLocaleString() || '0'} followers</span>
+                              <span>{influencer.engagement_rate || '0'}% engagement</span>
                             </div>
                             
                             {/* Tags */}
@@ -623,9 +623,9 @@ const Discover = () => {
                       // Use real audience demographics from database
                       const audienceMatch = influencer.audience_alignment?.alignment_score 
                         ? Math.round(influencer.audience_alignment.alignment_score) 
-                        : 75; // Default fallback
-                      const roles = influencer.audience_demographics?.job_titles ? Object.keys(influencer.audience_demographics.job_titles) : ["Marketing Manager", "VP Marketing"];
-                      const companySize = influencer.audience_alignment?.company_size || "50-500 employees";
+                        : 0; // No fallback - show 0 if missing
+                      const roles = influencer.audience_demographics?.job_titles ? Object.keys(influencer.audience_demographics.job_titles) : [];
+                      const companySize = influencer.audience_alignment?.company_size || '';
                       
                       return (
                         <Card key={influencer.id} className="bg-white rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 h-[320px]">
@@ -679,8 +679,8 @@ const Discover = () => {
                                       {influencer.platform}
                                     </span>
                                   </div>
-                                  <span>{influencer.audience_size?.toLocaleString() || 'N/A'} followers</span>
-                                  <span>{influencer.engagement_rate || 'N/A'}% engagement</span>
+                                  <span>{influencer.audience_size?.toLocaleString() || '0'} followers</span>
+                                  <span>{influencer.engagement_rate || '0'}% engagement</span>
                                 </div>
                                 
                                 {/* Tags */}
@@ -794,18 +794,18 @@ const Discover = () => {
                     const platformInfo = platformConfig[influencer.platform as keyof typeof platformConfig];
                     const PlatformIcon = platformInfo?.icon || Users;
                     
-                    // Use real data from database or show placeholder for intent features
-                    const intentScore = influencer.intent_score || 85; // Default fallback
+                    // Use real data from database - no fallbacks
+                    const intentScore = influencer.intent_score || 0;
                     const audienceAlignment = influencer.audience_alignment?.alignment_score 
                       ? Math.round(influencer.audience_alignment.alignment_score) 
-                      : 85; // Default fallback
-                    const recentMentions = influencer.recent_mentions || 0; // This would come from real analytics data
+                      : 0;
+                    const recentMentions = influencer.recent_mentions || 0;
                     
-                    // Use real expertise tags or show placeholder
-                    const selectedBuyingSignals = influencer.buying_signals?.slice(0, 3) || ["Content Marketing", "Growth Strategy", "B2B Sales"];
-                    const selectedContentThemes = influencer.content_themes?.slice(0, 3) || ["Industry Insights", "Best Practices", "Trends"];
-                    const selectedRoles = influencer.audience_demographics?.job_titles ? Object.keys(influencer.audience_demographics.job_titles).slice(0, 2) : ["Marketing Manager", "VP Marketing"];
-                    const selectedCompanySize = influencer.audience_alignment?.company_size || "50-500 employees";
+                    // Use real data from database - no fallbacks
+                    const selectedBuyingSignals = influencer.buying_signals?.slice(0, 3) || [];
+                    const selectedContentThemes = influencer.content_themes?.slice(0, 3) || [];
+                    const selectedRoles = influencer.audience_demographics?.job_titles ? Object.keys(influencer.audience_demographics.job_titles).slice(0, 2) : [];
+                    const selectedCompanySize = influencer.audience_alignment?.company_size || '';
                     
                     return (
                       <Card key={influencer.id} className="p-6 hover:shadow-lg transition-all duration-300">
@@ -838,8 +838,8 @@ const Discover = () => {
                                     {influencer.platform}
                                   </span>
                                 </div>
-                                <span>{influencer.audience_size?.toLocaleString() || 'N/A'} followers</span>
-                                <span>{influencer.engagement_rate || 'N/A'}% engagement</span>
+                                <span>{influencer.audience_size?.toLocaleString() || '0'} followers</span>
+                                <span>{influencer.engagement_rate || '0'}% engagement</span>
                               </div>
                             </div>
                           </div>
