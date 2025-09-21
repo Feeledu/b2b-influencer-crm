@@ -117,13 +117,13 @@ const Discover = () => {
   };
 
   const handlePreviousPage = () => {
-    if (pagination.has_prev) {
+    if (displayPagination.has_prev) {
       setCurrentPage(currentPage - 1);
     }
   };
 
   const handleNextPage = () => {
-    if (pagination.has_next) {
+    if (displayPagination.has_next) {
       setCurrentPage(currentPage + 1);
     }
   };
@@ -134,14 +134,9 @@ const Discover = () => {
     setCurrentPage(1);
   }, [searchTerm, selectedFilters]);
 
-  // Filter out already added influencers (backend handles search and platform/industry filters)
+  // Apply frontend-only filters (backend handles search and platform/industry filters)
   const availableInfluencers = useMemo(() => {
     return influencers.filter(influencer => {
-      // Only filter out already added influencers
-      if (addedInfluencerIds.has(influencer.id)) {
-        return false;
-      }
-
       // Apply frontend-only filters that backend doesn't handle
       if (selectedFilters.length > 0) {
         const matchesFilters = selectedFilters.some(filter => {
@@ -168,7 +163,10 @@ const Discover = () => {
 
       return true;
     });
-  }, [influencers, myInfluencers, selectedFilters]);
+  }, [influencers, selectedFilters]);
+
+  // Use original pagination since we're no longer filtering out added influencers
+  const displayPagination = pagination;
 
   console.log('📊 Final counts:', {
     totalInfluencers: influencers.length,
@@ -442,10 +440,10 @@ const Discover = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold">
-                  {pagination.total} Influencers Found
+                  {displayPagination.total} Influencers Found
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Showing {((pagination.page - 1) * pagination.limit) + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
+                  Showing {((displayPagination.page - 1) * displayPagination.limit) + 1}-{Math.min(displayPagination.page * displayPagination.limit, displayPagination.total)} of {displayPagination.total} results
                 </p>
               </div>
               <div className="flex items-center gap-2 border border-gray-200 rounded-lg p-1 bg-gray-50">
@@ -801,13 +799,13 @@ const Discover = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold">
-                    {pagination.total} Influencers Found
+                    {displayPagination.total} Influencers Found
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     Influencers with high audience alignment and purchase intent signals
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Showing {((pagination.page - 1) * pagination.limit) + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
+                    Showing {((displayPagination.page - 1) * displayPagination.limit) + 1}-{Math.min(displayPagination.page * displayPagination.limit, displayPagination.total)} of {displayPagination.total} results
                   </p>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -985,12 +983,12 @@ const Discover = () => {
             </div>
 
             {/* Pagination Controls for Intent Discovery */}
-            {pagination.total_pages > 1 && (
+            {displayPagination.total_pages > 1 && (
               <div className="flex justify-center items-center space-x-2 py-6 bg-gray-50 rounded-lg px-4">
                 <Button 
                   variant="outline" 
                   size="sm"
-                  disabled={!pagination.has_prev}
+                  disabled={!displayPagination.has_prev}
                   onClick={handlePreviousPage}
                 >
                   Previous
@@ -1000,8 +998,8 @@ const Discover = () => {
                 <div className="flex items-center space-x-1">
                   {(() => {
                     const pages = [];
-                    const currentPage = pagination.page;
-                    const totalPages = pagination.total_pages;
+                    const currentPage = displayPagination.page;
+                    const totalPages = displayPagination.total_pages;
                     
                     // Always show first page
                     if (currentPage > 3) {
@@ -1060,7 +1058,7 @@ const Discover = () => {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  disabled={!pagination.has_next}
+                  disabled={!displayPagination.has_next}
                   onClick={handleNextPage}
                 >
                   Next
@@ -1172,12 +1170,12 @@ const Discover = () => {
         </Tabs>
 
         {/* Pagination Controls */}
-        {pagination.total_pages > 1 && (
+        {displayPagination.total_pages > 1 && (
           <div className="flex justify-center items-center space-x-2 py-6 bg-gray-50 rounded-lg px-4">
             <Button 
               variant="outline" 
               size="sm"
-              disabled={!pagination.has_prev}
+              disabled={!displayPagination.has_prev}
               onClick={handlePreviousPage}
             >
               Previous
@@ -1187,8 +1185,8 @@ const Discover = () => {
             <div className="flex items-center space-x-1">
               {(() => {
                 const pages = [];
-                const currentPage = pagination.page;
-                const totalPages = pagination.total_pages;
+                const currentPage = displayPagination.page;
+                const totalPages = displayPagination.total_pages;
                 
                 // Show more page numbers around current page
                 const showPages = 5; // Number of page numbers to show
@@ -1264,7 +1262,7 @@ const Discover = () => {
             <Button 
               variant="outline" 
               size="sm"
-              disabled={!pagination.has_next}
+              disabled={!displayPagination.has_next}
               onClick={handleNextPage}
             >
               Next
