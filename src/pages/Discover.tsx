@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useInfluencers, useMyInfluencers, useInfluencerActions } from "@/hooks/useInfluencers";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -52,7 +52,7 @@ const Discover = () => {
     page: currentPage,
     limit: 20,
     search: searchTerm || undefined,
-    platform: selectedFilters.find(f => ['LinkedIn', 'Twitter', 'Podcast', 'Newsletter'].includes(f)) || undefined,
+    platform: selectedFilters.find(f => ['LinkedIn', 'Podcast', 'Newsletter'].includes(f))?.toLowerCase() || undefined,
     industry: selectedFilters.find(f => ['Technology', 'Product', 'Marketing', 'Sales', 'SaaS', 'Media'].includes(f)) || undefined,
   });
 
@@ -129,15 +129,46 @@ const Discover = () => {
   };
 
 
-  // Reset to page 1 when search term changes
+  // Reset to page 1 when search term or filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, selectedFilters]);
 
-  // Filter out already added influencers
-  const availableInfluencers = influencers.filter(influencer => 
-    !addedInfluencerIds.has(influencer.id)
-  );
+  // Filter out already added influencers (backend handles search and platform/industry filters)
+  const availableInfluencers = useMemo(() => {
+    return influencers.filter(influencer => {
+      // Only filter out already added influencers
+      if (addedInfluencerIds.has(influencer.id)) {
+        return false;
+      }
+
+      // Apply frontend-only filters that backend doesn't handle
+      if (selectedFilters.length > 0) {
+        const matchesFilters = selectedFilters.some(filter => {
+          const filterLower = filter.toLowerCase();
+          
+          // Check follower count filter (backend doesn't handle this)
+          if (filterLower === '10k+ followers' && influencer.audience_size && influencer.audience_size >= 10000) {
+            return true;
+          }
+          
+          // Check high engagement filter (backend doesn't handle this)
+          if (filterLower === 'high engagement' && influencer.engagement_rate && influencer.engagement_rate >= 5) {
+            return true;
+          }
+          
+          return false;
+        });
+        
+        // If we have filters but none match, exclude this influencer
+        if (selectedFilters.some(f => ['10K+ Followers', 'High Engagement'].includes(f)) && !matchesFilters) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [influencers, addedInfluencerIds, selectedFilters]);
 
   console.log('Discover page rendering', { 
     loading, 
@@ -146,7 +177,8 @@ const Discover = () => {
     availableInfluencers: availableInfluencers.length,
     addedInfluencerIds: Array.from(addedInfluencerIds),
     searchTerm,
-    selectedFilters
+    selectedFilters,
+    pagination
   });
 
   const platformIcons = {
@@ -255,10 +287,20 @@ const Discover = () => {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search by name, industry, or expertise..."
-                  className="pl-10"
+                  className="pl-10 pr-10"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
+                {searchTerm && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 h-6 w-6 -translate-y-1/2 p-0 hover:bg-gray-100"
+                    onClick={() => setSearchTerm("")}
+                  >
+                    <span className="text-gray-400">×</span>
+                  </Button>
+                )}
               </div>
             </div>
             <Button 
@@ -272,7 +314,7 @@ const Discover = () => {
 
           {/* Quick Filters */}
           <div className="mt-4 flex flex-wrap gap-2">
-            {['Technology', 'LinkedIn', 'Podcast', 'Newsletter', '10K+ Followers'].map((filter) => (
+            {['Technology', 'LinkedIn', 'Podcast', 'Newsletter', '10K+ Followers', 'High Engagement'].map((filter) => (
               <Badge 
                 key={filter}
                 variant={selectedFilters.includes(filter) ? "default" : "outline"}

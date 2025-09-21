@@ -1,10 +1,8 @@
 /**
- * API service for communicating with the backend
+ * API service for communicating directly with Supabase
  */
 
 import { supabase } from './supabase';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -75,436 +73,106 @@ interface UpdateUserInfluencerRequest {
 }
 
 class ApiService {
-  private async getAuthToken(): Promise<string | null> {
+  private async getCurrentUser() {
     try {
-      console.log('🔍 Getting auth token...');
       const { data: { session }, error } = await supabase.auth.getSession();
-      console.log('🔍 Session data:', { session: !!session, error, hasToken: !!session?.access_token });
-      
       if (error) {
-        console.error('❌ Error getting session:', error);
+        console.error('Error getting session:', error);
         return null;
       }
-      
-      if (!session) {
-        console.log('❌ No session found - using demo token for development');
-        // For development, return a demo token that the backend can recognize
-        return 'demo-token-for-development';
-      }
-      
-      console.log('✅ Token found:', session.access_token?.substring(0, 20) + '...');
-      return session.access_token || null;
+      return session?.user || null;
     } catch (error) {
-      console.error('❌ Error getting auth token:', error);
-      // For development, return a demo token
-      return 'demo-token-for-development';
+      console.error('Error getting current user:', error);
+      return null;
     }
   }
 
-  private isDemoMode(): boolean {
-    // Demo mode disabled - always use real API calls
-    return false;
+  private async getUserId(): Promise<string> {
+    const user = await this.getCurrentUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+    return user.id;
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    console.log('🔍 Making API request:', { endpoint, options });
 
-    const token = await this.getAuthToken();
-    console.log('🔍 Token for request:', token ? 'Present' : 'Missing');
-    
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
-      ...options,
-    };
-
-    console.log('🔍 Request config:', { 
-      url: `${API_BASE_URL}${endpoint}`,
-      headers: config.headers,
-      method: config.method || 'GET'
-    });
-
-    try {
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        ...config,
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      console.log('🔍 Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('❌ API Error:', errorData);
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('✅ API Success:', data);
-      return data;
-    } catch (error) {
-      console.error('❌ Request failed:', error);
-      
-      // If it's an auth error, provide a more helpful message
-      if (error instanceof Error && error.message.includes('401')) {
-        throw new Error('Authentication required. Please sign in to access campaigns.');
-      }
-      
-      // If it's a timeout, provide a helpful message
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Request timed out. Please check your connection and try again.');
-      }
-      
-      throw error;
-    }
-  }
-
-  private getMockInfluencerById(id: string) {
-    const mockInfluencers = [
-      {
-        id: '1',
-        name: 'Sarah Chen',
-        platform: 'LinkedIn',
-        handle: '@sarahchen',
-        bio: 'SaaS Marketing Expert | Helping B2B companies scale through content marketing',
-        avatar_url: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-        website_url: 'https://sarahchen.com',
-        email: 'sarah@sarahchen.com',
-        linkedin_url: 'https://linkedin.com/in/sarahchen',
-        twitter_url: 'https://twitter.com/sarahchen',
-        industry: 'SaaS',
-        audience_size: 25000,
-        engagement_rate: 4.2,
-        location: 'San Francisco, CA',
-        expertise_tags: ['SaaS Marketing', 'Content Strategy', 'B2B Growth'],
-        audience_demographics: {
-          buyer_alignment_score: 85,
-          age_range: '25-45 years old',
-          company_size: '50-500 employees',
-          job_titles: ['Marketing Manager', 'VP Marketing', 'CMO', 'Growth Hacker']
-        },
-        contact_info: {
-          email: 'sarah@sarahchen.com',
-          linkedin: 'https://linkedin.com/in/sarahchen',
-          twitter: 'https://twitter.com/sarahchen'
-        },
-        is_verified: true,
-        created_at: '2024-01-15T10:30:00Z',
-        updated_at: '2024-01-15T10:30:00Z',
-        ai_confidence: 0.92
-      },
-      {
-        id: '2',
-        name: 'Mike Rodriguez',
-        platform: 'Podcast',
-        handle: '@mikerodriguez',
-        bio: 'Host of "SaaS Unfiltered" podcast | 10+ years in B2B sales and marketing',
-        avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-        website_url: 'https://mikerodriguez.com',
-        email: 'mike@mikerodriguez.com',
-        linkedin_url: 'https://linkedin.com/in/mikerodriguez',
-        twitter_url: 'https://twitter.com/mikerodriguez',
-        industry: 'SaaS',
-        audience_size: 15000,
-        engagement_rate: 6.8,
-        location: 'Austin, TX',
-        expertise_tags: ['B2B Sales', 'Podcast Hosting', 'Lead Generation', 'Sales Enablement'],
-        audience_demographics: {
-          buyer_alignment_score: 78,
-          age_range: '30-50 years old',
-          company_size: '10-200 employees',
-          job_titles: ['Sales Manager', 'VP Sales', 'Sales Director', 'Account Executive']
-        },
-        contact_info: {
-          email: 'mike@mikerodriguez.com',
-          linkedin: 'https://linkedin.com/in/mikerodriguez',
-          twitter: 'https://twitter.com/mikerodriguez'
-        },
-        is_verified: true,
-        created_at: '2024-01-10T14:20:00Z',
-        updated_at: '2024-01-10T14:20:00Z',
-        ai_confidence: 0.87
-      }
-    ];
-    
-    return mockInfluencers.find(inf => inf.id === id);
-  }
-
-  private async getMockData<T>(endpoint: string, options: RequestInit): Promise<T> {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    if (endpoint.includes('/influencers/my-list')) {
-      // Get saved influencers from localStorage
-      const savedInfluencers = JSON.parse(localStorage.getItem('mock_saved_influencers') || '[]');
-      console.log('🔍 Mock API: Getting my-list, found:', savedInfluencers.length, 'saved influencers');
-      console.log('🔍 Mock API: Saved influencers:', savedInfluencers);
-      return {
-        data: savedInfluencers,
-        total: savedInfluencers.length,
-        page: 1,
-        limit: 20,
-        total_pages: Math.ceil(savedInfluencers.length / 20),
-        has_next: false,
-        has_prev: false
-      } as T;
-    }
-
-    // Handle POST requests for adding influencers
-    if (options.method === 'POST' && endpoint.includes('/influencers/my-list')) {
-      console.log('🔍 Mock API: Adding influencer to my-list');
-      const body = JSON.parse(options.body as string);
-      console.log('🔍 Mock API: Request body:', body);
-      
-      const savedInfluencers = JSON.parse(localStorage.getItem('mock_saved_influencers') || '[]');
-      console.log('🔍 Mock API: Current saved influencers:', savedInfluencers.length);
-      
-      // Find the influencer to add
-      const influencerToAdd = this.getMockInfluencerById(body.influencer_id);
-      console.log('🔍 Mock API: Found influencer to add:', influencerToAdd?.name);
-      
-      if (influencerToAdd) {
-        const userInfluencer = {
-          id: `ui_${Date.now()}`,
-          user_id: 'demo-user-123',
-          influencer_id: body.influencer_id,
-          status: 'saved',
-          notes: body.notes || '',
-          priority: body.priority || 0,
-          tags: body.tags || [],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          influencer: influencerToAdd
-        };
-        
-        savedInfluencers.push(userInfluencer);
-        localStorage.setItem('mock_saved_influencers', JSON.stringify(savedInfluencers));
-        console.log('🔍 Mock API: Added influencer, new count:', savedInfluencers.length);
-      } else {
-        console.error('❌ Mock API: Could not find influencer with ID:', body.influencer_id);
-      }
-      
-      return { success: true, message: 'Influencer added successfully' } as T;
-    }
-
-    // Handle DELETE requests for removing influencers
-    if (options.method === 'DELETE' && endpoint.includes('/influencers/my-list/')) {
-      const influencerId = endpoint.split('/').pop();
-      const savedInfluencers = JSON.parse(localStorage.getItem('mock_saved_influencers') || '[]');
-      const filtered = savedInfluencers.filter((ui: any) => ui.influencer_id !== influencerId);
-      localStorage.setItem('mock_saved_influencers', JSON.stringify(filtered));
-      
-      return { success: true, message: 'Influencer removed successfully' } as T;
-    }
-
-    // Handle GET requests for checking saved status
-    if (endpoint.includes('/influencers/') && endpoint.includes('/saved-status/')) {
-      const influencerId = endpoint.split('/').pop();
-      const savedInfluencers = JSON.parse(localStorage.getItem('mock_saved_influencers') || '[]');
-      const isSaved = savedInfluencers.some((ui: any) => ui.influencer_id === influencerId);
-      
-      return {
-        is_saved: isSaved,
-        relationship: isSaved ? savedInfluencers.find((ui: any) => ui.influencer_id === influencerId) : null
-      } as T;
-    }
-
-    if (endpoint.includes('/influencers') && !endpoint.includes('/my-list')) {
-      // Get saved influencers from localStorage to mark them as saved
-      const savedInfluencers = JSON.parse(localStorage.getItem('mock_saved_influencers') || '[]');
-      const savedIds = savedInfluencers.map((ui: any) => ui.influencer_id);
-      
-      // Parse query parameters for filtering
-      const url = new URL(`http://localhost:3000${endpoint}`);
-      const minFollowers = url.searchParams.get('min_followers');
-      const platform = url.searchParams.get('platform');
-      const industry = url.searchParams.get('industry');
-      const search = url.searchParams.get('search');
-      
-      console.log('🔍 Mock API: Filter params:', { minFollowers, platform, industry, search });
-      
-      let allInfluencers = [
-          {
-            id: '1',
-            name: 'Sarah Chen',
-            platform: 'LinkedIn',
-            handle: '@sarahchen',
-            bio: 'SaaS Marketing Expert | Helping B2B companies scale through content marketing',
-            avatar_url: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-            website_url: 'https://sarahchen.com',
-            email: 'sarah@sarahchen.com',
-            linkedin_url: 'https://linkedin.com/in/sarahchen',
-            twitter_url: 'https://twitter.com/sarahchen',
-            industry: 'SaaS',
-            audience_size: 25000,
-            engagement_rate: 4.2,
-            location: 'San Francisco, CA',
-            expertise_tags: ['SaaS Marketing', 'Content Strategy', 'B2B Growth'],
-            is_saved: savedIds.includes('1'),
-            audience_demographics: {
-              buyer_alignment_score: 85,
-              age_range: '25-45 years old',
-              company_size: '50-500 employees',
-              job_titles: ['Marketing Manager', 'VP Marketing', 'CMO', 'Growth Hacker']
-            },
-            contact_info: {
-              email: 'sarah@sarahchen.com',
-              linkedin: 'https://linkedin.com/in/sarahchen',
-              twitter: 'https://twitter.com/sarahchen'
-            },
-            is_verified: true,
-            created_at: '2024-01-15T10:30:00Z',
-            updated_at: '2024-01-15T10:30:00Z',
-            ai_confidence: 0.92
-          },
-          {
-            id: '2',
-            name: 'Mike Rodriguez',
-            platform: 'Podcast',
-            handle: '@mikerodriguez',
-            bio: 'Host of "SaaS Unfiltered" podcast | 10+ years in B2B sales and marketing',
-            avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-            website_url: 'https://mikerodriguez.com',
-            email: 'mike@mikerodriguez.com',
-            linkedin_url: 'https://linkedin.com/in/mikerodriguez',
-            twitter_url: 'https://twitter.com/mikerodriguez',
-            industry: 'SaaS',
-            audience_size: 15000,
-            engagement_rate: 6.8,
-            location: 'Austin, TX',
-            expertise_tags: ['B2B Sales', 'Podcast Hosting', 'Lead Generation', 'Sales Enablement'],
-            is_saved: savedIds.includes('2'),
-            audience_demographics: {
-              buyer_alignment_score: 78,
-              age_range: '30-50 years old',
-              company_size: '10-200 employees',
-              job_titles: ['Sales Manager', 'VP Sales', 'Sales Director', 'Account Executive']
-            },
-            contact_info: {
-              email: 'mike@mikerodriguez.com',
-              linkedin: 'https://linkedin.com/in/mikerodriguez',
-              twitter: 'https://twitter.com/mikerodriguez'
-            },
-            is_verified: true,
-            created_at: '2024-01-10T14:20:00Z',
-            updated_at: '2024-01-10T14:20:00Z',
-            ai_confidence: 0.87
-          },
-          {
-            id: '3',
-            name: 'Alex Thompson',
-            platform: 'Newsletter',
-            handle: '@alexthompson',
-            bio: 'Founder of "B2B Growth Weekly" | Former VP Marketing at 3 SaaS companies',
-            avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-            website_url: 'https://alexthompson.com',
-            email: 'alex@alexthompson.com',
-            linkedin_url: 'https://linkedin.com/in/alexthompson',
-            twitter_url: 'https://twitter.com/alexthompson',
-            industry: 'SaaS',
-            audience_size: 35000,
-            engagement_rate: 5.1,
-            location: 'New York, NY',
-            expertise_tags: ['B2B Marketing', 'Newsletter Growth', 'Content Marketing', 'Marketing Automation'],
-            audience_demographics: {
-              buyer_alignment_score: 92,
-              age_range: '28-45',
-              company_size: '100-1000 employees',
-              job_titles: ['Marketing Director', 'VP Marketing', 'CMO', 'Marketing Manager']
-            },
-            contact_info: {
-              email: 'alex@alexthompson.com',
-              linkedin: 'https://linkedin.com/in/alexthompson',
-              twitter: 'https://twitter.com/alexthompson'
-            },
-            is_verified: true,
-            created_at: '2024-01-05T09:15:00Z',
-            updated_at: '2024-01-05T09:15:00Z',
-            ai_confidence: 0.95
-          }
-        ];
-        
-        // Apply filters
-        let filteredInfluencers = allInfluencers;
-        
-        if (minFollowers) {
-          const minFollowersNum = parseInt(minFollowers);
-          filteredInfluencers = filteredInfluencers.filter(inf => inf.audience_size >= minFollowersNum);
-        }
-        
-        if (platform) {
-          filteredInfluencers = filteredInfluencers.filter(inf => inf.platform === platform);
-        }
-        
-        if (industry) {
-          filteredInfluencers = filteredInfluencers.filter(inf => inf.industry === industry);
-        }
-        
-        if (search) {
-          const searchLower = search.toLowerCase();
-          filteredInfluencers = filteredInfluencers.filter(inf => 
-            inf.name.toLowerCase().includes(searchLower) ||
-            inf.bio.toLowerCase().includes(searchLower) ||
-            inf.expertise_tags.some(tag => tag.toLowerCase().includes(searchLower))
-          );
-        }
-        
-        console.log('🔍 Mock API: Filtered influencers:', filteredInfluencers.length);
-        
-        return {
-          data: filteredInfluencers,
-          total: filteredInfluencers.length,
-          page: 1,
-          limit: 20,
-          total_pages: Math.ceil(filteredInfluencers.length / 20),
-          has_next: false,
-          has_prev: false
-        } as T;
-      }
-
-    return {} as T;
-  }
 
   // Auth endpoints
   async signUp(email: string, password: string): Promise<ApiResponse> {
-    return this.request<ApiResponse>('/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      
+      if (error) {
+        return { success: false, message: error.message };
+      }
+      
+      return { success: true, message: 'User created successfully', data };
+    } catch (error) {
+      return { success: false, message: error instanceof Error ? error.message : 'Sign up failed' };
+    }
   }
 
   async signIn(email: string, password: string): Promise<ApiResponse> {
-    return this.request<ApiResponse>('/auth/signin', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        return { success: false, message: error.message };
+      }
+      
+      return { success: true, message: 'Signed in successfully', data };
+    } catch (error) {
+      return { success: false, message: error instanceof Error ? error.message : 'Sign in failed' };
+    }
   }
 
   async signOut(): Promise<ApiResponse> {
-    return this.request<ApiResponse>('/auth/signout', {
-      method: 'POST',
-    });
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        return { success: false, message: error.message };
+      }
+      
+      return { success: true, message: 'Signed out successfully' };
+    } catch (error) {
+      return { success: false, message: error instanceof Error ? error.message : 'Sign out failed' };
+    }
   }
 
   async getProfile(): Promise<ApiResponse> {
-    return this.request<ApiResponse>('/auth/profile');
+    try {
+      const user = await this.getCurrentUser();
+      if (!user) {
+        return { success: false, message: 'User not authenticated' };
+      }
+      
+      return { success: true, message: 'Profile retrieved successfully', data: user };
+    } catch (error) {
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to get profile' };
+    }
   }
 
   async updateProfile(updates: { name?: string; avatar_url?: string }): Promise<ApiResponse> {
-    return this.request<ApiResponse>('/auth/profile', {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        data: updates
+      });
+      
+      if (error) {
+        return { success: false, message: error.message };
+      }
+      
+      return { success: true, message: 'Profile updated successfully', data };
+    } catch (error) {
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to update profile' };
+    }
   }
 
   // Influencer endpoints
@@ -516,19 +184,57 @@ class ApiService {
     search?: string;
     minFollowers?: number;
   } = {}): Promise<PaginatedResponse<Influencer>> {
-    const searchParams = new URLSearchParams();
-    
-    if (params.page) searchParams.set('page', params.page.toString());
-    if (params.limit) searchParams.set('limit', params.limit.toString());
-    if (params.platform) searchParams.set('platform', params.platform);
-    if (params.industry) searchParams.set('industry', params.industry);
-    if (params.search) searchParams.set('search', params.search);
-    if (params.minFollowers) searchParams.set('min_followers', params.minFollowers.toString());
+    try {
+      const page = params.page || 1;
+      const limit = params.limit || 20;
+      const offset = (page - 1) * limit;
 
-    const queryString = searchParams.toString();
-    const endpoint = `/influencers${queryString ? `?${queryString}` : ''}`;
-    
-    return this.request<PaginatedResponse<Influencer>>(endpoint);
+      let query = supabase
+        .from('influencers')
+        .select('*', { count: 'exact' });
+
+      // Apply filters
+      if (params.platform) {
+        query = query.eq('platform', params.platform);
+      }
+      if (params.industry) {
+        query = query.eq('industry', params.industry);
+      }
+      if (params.minFollowers) {
+        query = query.gte('audience_size', params.minFollowers);
+      }
+      if (params.search) {
+        query = query.or(`name.ilike.%${params.search}%,bio.ilike.%${params.search}%,expertise_tags.cs.{${params.search}}`);
+      }
+
+      // Apply pagination
+      query = query.range(offset, offset + limit - 1);
+
+      // Apply sorting
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const total = count || 0;
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        data: data || [],
+        total,
+        page,
+        limit,
+        total_pages: totalPages,
+        has_next: page < totalPages,
+        has_prev: page > 1,
+      };
+    } catch (error) {
+      console.error('Error fetching influencers:', error);
+      throw new Error(error instanceof Error ? error.message : 'Failed to fetch influencers');
+    }
   }
 
   async getMyInfluencers(params: {
@@ -536,77 +242,305 @@ class ApiService {
     limit?: number;
     status?: string;
   } = {}): Promise<PaginatedResponse<UserInfluencer>> {
-    const searchParams = new URLSearchParams();
-    
-    if (params.page) searchParams.set('page', params.page.toString());
-    if (params.limit) searchParams.set('limit', params.limit.toString());
-    if (params.status) searchParams.set('status', params.status);
+    try {
+      const userId = await this.getUserId();
+      const page = params.page || 1;
+      const limit = params.limit || 20;
+      const offset = (page - 1) * limit;
 
-    const queryString = searchParams.toString();
-    const endpoint = `/influencers/my-list${queryString ? `?${queryString}` : ''}`;
-    
-    return this.request<PaginatedResponse<UserInfluencer>>(endpoint);
+      let query = supabase
+        .from('user_influencers')
+        .select(`
+          *,
+          influencer:influencers(*)
+        `, { count: 'exact' })
+        .eq('user_id', userId);
+
+      if (params.status) {
+        query = query.eq('status', params.status);
+      }
+
+      query = query.range(offset, offset + limit - 1);
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const total = count || 0;
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        data: data || [],
+        total,
+        page,
+        limit,
+        total_pages: totalPages,
+        has_next: page < totalPages,
+        has_prev: page > 1,
+      };
+    } catch (error) {
+      console.error('Error fetching my influencers:', error);
+      throw new Error(error instanceof Error ? error.message : 'Failed to fetch my influencers');
+    }
   }
 
   async addToMyList(data: AddToMyListRequest): Promise<ApiResponse> {
-    return this.request<ApiResponse>('/influencers/my-list', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    try {
+      const userId = await this.getUserId();
+
+      // Check if influencer exists
+      const { data: influencer, error: influencerError } = await supabase
+        .from('influencers')
+        .select('id')
+        .eq('id', data.influencer_id)
+        .single();
+
+      if (influencerError || !influencer) {
+        return { success: false, message: 'Influencer not found' };
+      }
+
+      // Check if already in user's list
+      const { data: existing } = await supabase
+        .from('user_influencers')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('influencer_id', data.influencer_id)
+        .single();
+
+      if (existing) {
+        return { success: false, message: 'Influencer already in your list' };
+      }
+
+      // Add to user's list
+      const { error } = await supabase
+        .from('user_influencers')
+        .insert({
+          user_id: userId,
+          influencer_id: data.influencer_id,
+          status: 'saved',
+          notes: data.notes || '',
+          priority: data.priority || 0,
+          tags: data.tags || [],
+        });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { success: true, message: 'Influencer added to your list successfully' };
+    } catch (error) {
+      console.error('Error adding influencer to list:', error);
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to add influencer to list' };
+    }
   }
 
   async removeFromMyList(influencerId: string): Promise<ApiResponse> {
-    return this.request<ApiResponse>(`/influencers/my-list/${influencerId}`, {
-      method: 'DELETE',
-    });
+    try {
+      const userId = await this.getUserId();
+
+      const { error } = await supabase
+        .from('user_influencers')
+        .delete()
+        .eq('user_id', userId)
+        .eq('influencer_id', influencerId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { success: true, message: 'Influencer removed from your list successfully' };
+    } catch (error) {
+      console.error('Error removing influencer from list:', error);
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to remove influencer from list' };
+    }
   }
 
   async updateMyInfluencer(influencerId: string, updates: UpdateUserInfluencerRequest): Promise<ApiResponse> {
-    return this.request<ApiResponse>(`/influencers/my-list/${influencerId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
+    try {
+      const userId = await this.getUserId();
+
+      const updateData: any = {};
+      if (updates.status !== undefined) updateData.status = updates.status;
+      if (updates.notes !== undefined) updateData.notes = updates.notes;
+      if (updates.priority !== undefined) updateData.priority = updates.priority;
+      if (updates.tags !== undefined) updateData.tags = updates.tags;
+      if (updates.last_contacted_at !== undefined) updateData.last_contacted_at = updates.last_contacted_at;
+
+      const { error } = await supabase
+        .from('user_influencers')
+        .update(updateData)
+        .eq('user_id', userId)
+        .eq('influencer_id', influencerId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { success: true, message: 'Influencer updated successfully' };
+    } catch (error) {
+      console.error('Error updating influencer:', error);
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to update influencer' };
+    }
   }
 
   async checkSavedStatus(influencerId: string): Promise<{ is_saved: boolean; relationship?: UserInfluencer }> {
-    return this.request<{ is_saved: boolean; relationship?: UserInfluencer }>(`/influencers/check-saved/${influencerId}`);
+    try {
+      const userId = await this.getUserId();
+
+      const { data, error } = await supabase
+        .from('user_influencers')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('influencer_id', influencerId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+        throw new Error(error.message);
+      }
+
+      return {
+        is_saved: !!data,
+        relationship: data || undefined,
+      };
+    } catch (error) {
+      console.error('Error checking saved status:', error);
+      return { is_saved: false, relationship: undefined };
+    }
   }
 
   async updateRelationshipStrength(influencerId: string, strength: number): Promise<ApiResponse> {
-    return this.request<ApiResponse>(`/influencers/${influencerId}/relationship?strength=${strength}`, {
-      method: 'PUT',
-    });
+    try {
+      const userId = await this.getUserId();
+
+      const { error } = await supabase
+        .from('user_influencers')
+        .update({ relationship_strength: strength })
+        .eq('user_id', userId)
+        .eq('influencer_id', influencerId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { success: true, message: `Relationship strength updated to ${strength}` };
+    } catch (error) {
+      console.error('Error updating relationship strength:', error);
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to update relationship strength' };
+    }
   }
 
   async setFollowUpDate(influencerId: string, date: Date): Promise<ApiResponse> {
-    return this.request<ApiResponse>(`/influencers/${influencerId}/follow-up?follow_up_date=${date.toISOString()}`, {
-      method: 'PUT',
-    });
+    try {
+      const userId = await this.getUserId();
+
+      const { error } = await supabase
+        .from('user_influencers')
+        .update({ follow_up_date: date.toISOString() })
+        .eq('user_id', userId)
+        .eq('influencer_id', influencerId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { success: true, message: `Follow-up date set to ${date.toLocaleDateString()}` };
+    } catch (error) {
+      console.error('Error setting follow-up date:', error);
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to set follow-up date' };
+    }
   }
 
   // Campaign endpoints
   async getCampaigns(): Promise<ApiResponse> {
-    return this.request<ApiResponse>('/campaigns');
+    try {
+      const userId = await this.getUserId();
+
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { success: true, message: 'Campaigns retrieved successfully', data: data || [] };
+    } catch (error) {
+      console.error('Error fetching campaigns:', error);
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to fetch campaigns' };
+    }
   }
 
   async createCampaign(data: any): Promise<ApiResponse> {
-    return this.request<ApiResponse>('/campaigns', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    try {
+      const userId = await this.getUserId();
+
+      const { data: campaign, error } = await supabase
+        .from('campaigns')
+        .insert({
+          ...data,
+          user_id: userId,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { success: true, message: 'Campaign created successfully', data: campaign };
+    } catch (error) {
+      console.error('Error creating campaign:', error);
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to create campaign' };
+    }
   }
 
   async updateCampaign(campaignId: string, data: any): Promise<ApiResponse> {
-    return this.request<ApiResponse>(`/campaigns/${campaignId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    try {
+      const userId = await this.getUserId();
+
+      const { data: campaign, error } = await supabase
+        .from('campaigns')
+        .update(data)
+        .eq('id', campaignId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { success: true, message: 'Campaign updated successfully', data: campaign };
+    } catch (error) {
+      console.error('Error updating campaign:', error);
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to update campaign' };
+    }
   }
 
   async deleteCampaign(campaignId: string): Promise<ApiResponse> {
-    return this.request<ApiResponse>(`/campaigns/${campaignId}`, {
-      method: 'DELETE',
-    });
+    try {
+      const userId = await this.getUserId();
+
+      const { error } = await supabase
+        .from('campaigns')
+        .delete()
+        .eq('id', campaignId)
+        .eq('user_id', userId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { success: true, message: 'Campaign deleted successfully' };
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to delete campaign' };
+    }
   }
 }
 

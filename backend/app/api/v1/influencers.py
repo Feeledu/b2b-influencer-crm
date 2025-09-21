@@ -129,8 +129,9 @@ async def get_influencers(
         if min_followers:
             query = query.gte("audience_size", min_followers)
         if search:
-            # Search in name, bio, and expertise_tags
-            query = query.or_(f"name.ilike.%{search}%,bio.ilike.%{search}%,expertise_tags.cs.{{'{search}'}}")
+            # Search in name, bio, and expertise_tags using proper Supabase syntax
+            search_term = f"%{search}%"
+            query = query.or_(f"name.ilike.{search_term},bio.ilike.{search_term},expertise_tags.cs.{{{search}}}")
         
         # Apply sorting
         if sort_by in ["name", "audience_size", "engagement_rate", "created_at", "updated_at"]:
