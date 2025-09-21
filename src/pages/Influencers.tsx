@@ -29,7 +29,8 @@ import {
   Target,
   BarChart3,
   UserPlus,
-  Clock
+  Clock,
+  Trash2
 } from "lucide-react";
 
 const Influencers = () => {
@@ -53,6 +54,21 @@ const Influencers = () => {
     page: 1,
     limit: 50
   });
+
+  // Get influencer actions
+  const { removeFromMyList } = useInfluencerActions();
+
+  // Handle removing influencer from list
+  const handleRemoveInfluencer = async (influencerId: string) => {
+    try {
+      const success = await removeFromMyList(influencerId);
+      if (success) {
+        refetchMyInfluencers(); // Refresh the list
+      }
+    } catch (error) {
+      console.error("Error removing influencer:", error);
+    }
+  };
 
   // Use real data from API
   const displayInfluencers = myInfluencers || [];
@@ -483,6 +499,15 @@ const Influencers = () => {
                             <Heart className="w-4 h-4 mr-1" />
                             Contact
                           </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleRemoveInfluencer(userInfluencer.influencer.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Remove
+                          </Button>
                         </div>
                       </div>
                     </Card>
@@ -568,6 +593,15 @@ const Influencers = () => {
                                 >
                                   <ExternalLink className="w-4 h-4 mr-1" />
                                   View
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleRemoveInfluencer(userInfluencer.influencer.id)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                  Remove
                                 </Button>
                               </div>
                             </div>
@@ -656,6 +690,15 @@ const Influencers = () => {
                                   <ExternalLink className="w-4 h-4 mr-1" />
                                   View
                                 </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleRemoveInfluencer(userInfluencer.influencer.id)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                  Remove
+                                </Button>
                               </div>
                             </div>
                           </Card>
@@ -743,6 +786,15 @@ const Influencers = () => {
                                   <ExternalLink className="w-4 h-4 mr-1" />
                                   View
                     </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleRemoveInfluencer(userInfluencer.influencer.id)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                  Remove
+                                </Button>
                               </div>
                   </div>
                 </Card>
