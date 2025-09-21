@@ -39,6 +39,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Discover", href: "/discover", icon: Search },
     { name: "My Influencers", href: "/influencers", icon: UserPlus },
+    { name: "CRM Workspace", href: "/crm", icon: Users },
     { name: "Campaigns", href: "/campaigns", icon: Target },
     { name: "Billing", href: "/billing", icon: CreditCard },
     { name: "Contact", href: "/contact", icon: Mail },

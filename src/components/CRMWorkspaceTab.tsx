@@ -7,6 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMyInfluencers, useInfluencerActions } from "@/hooks/useInfluencers";
 import { useState } from "react";
 import { 
+  STATUS_CONFIG, 
+  getStatusProgression, 
+  getStatusSuggestions,
+  InfluencerStatus,
+  InteractionType 
+} from "@/lib/statusProgression";
+import InteractionTracker from "./InteractionTracker";
+import { 
   Search, 
   Filter, 
   Users, 
@@ -26,9 +34,10 @@ const CRMWorkspaceTab = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedInfluencer, setSelectedInfluencer] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("influencers");
+  const [interactions, setInteractions] = useState<Record<string, InteractionType[]>>({});
 
   const { influencers, loading, error, refetch } = useMyInfluencers();
-  const { updateRelationshipStrength, setFollowUpDate } = useInfluencerActions();
+  const { updateRelationshipStrength, setFollowUpDate, updateInfluencer } = useInfluencerActions();
 
   const handleUpdateStrength = async (influencerId: string, strength: number) => {
     try {
@@ -46,6 +55,55 @@ const CRMWorkspaceTab = () => {
     } catch (error) {
       console.error("Error setting follow-up date:", error);
     }
+  };
+
+  // Handle status progression
+  const handleStatusUpdate = async (influencerId: string, newStatus: InfluencerStatus) => {
+    try {
+      // Map new status to old status for API compatibility
+      const apiStatus = newStatus === 'engaged' ? 'warm' : 
+                       newStatus === 'qualified' ? 'warm' : 
+                       newStatus;
+      
+      const success = await updateInfluencer(influencerId, { status: apiStatus as any });
+      if (success) {
+        refetch();
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+    }
+  };
+
+  // Handle adding interaction
+  const handleAddInteraction = (influencerId: string, interaction: Omit<InteractionType, 'id' | 'timestamp'>) => {
+    const newInteraction: InteractionType = {
+      ...interaction,
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString()
+    };
+    
+    setInteractions(prev => ({
+      ...prev,
+      [influencerId]: [...(prev[influencerId] || []), newInteraction]
+    }));
+  };
+
+  // Handle updating interaction
+  const handleUpdateInteraction = (influencerId: string, interactionId: string, updates: Partial<InteractionType>) => {
+    setInteractions(prev => ({
+      ...prev,
+      [influencerId]: prev[influencerId]?.map(i => 
+        i.id === interactionId ? { ...i, ...updates } : i
+      ) || []
+    }));
+  };
+
+  // Handle deleting interaction
+  const handleDeleteInteraction = (influencerId: string, interactionId: string) => {
+    setInteractions(prev => ({
+      ...prev,
+      [influencerId]: prev[influencerId]?.filter(i => i.id !== interactionId) || []
+    }));
   };
 
   const getStatusColor = (status: string) => {
@@ -289,19 +347,62 @@ const CRMWorkspaceTab = () => {
                           <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">{selectedInfluencerData.notes}</p>
                         </div>
                       )}
+
+                      {/* Status Progression Suggestions */}
+                      {(() => {
+                        const influencerInteractions = interactions[selectedInfluencerData.id] || [];
+                        const enhancedStatus = selectedInfluencerData.status === 'warm' ? 'engaged' : 
+                                             selectedInfluencerData.status as InfluencerStatus;
+                        
+                        const progression = getStatusProgression(
+                          enhancedStatus,
+                          influencerInteractions,
+                          selectedInfluencerData.last_contacted_at
+                        );
+                        const suggestions = getStatusSuggestions(progression);
+                        
+                        return (
+                          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <h4 className="font-medium mb-3 text-blue-900">Status Progression</h4>
+                            
+                            {progression.nextSuggestedStatus && (
+                              <div className="mb-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-sm text-blue-800">
+                                    Suggested next step: {STATUS_CONFIG[progression.nextSuggestedStatus]?.label}
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleStatusUpdate(selectedInfluencerData.id, progression.nextSuggestedStatus!)}
+                                    className="text-xs"
+                                  >
+                                    Advance Status
+                                  </Button>
+                                </div>
+                                <p className="text-xs text-blue-700">{progression.progressionReason}</p>
+                              </div>
+                            )}
+                            
+                            {suggestions.length > 0 && (
+                              <div className="text-xs text-blue-700">
+                                💡 {suggestions[0]}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </TabsContent>
 
                   <TabsContent value="interactions" className="space-y-4">
-                    <div className="text-center py-8">
-                      <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No interactions yet</h3>
-                      <p className="text-gray-600 mb-4">Start tracking your conversations and meetings.</p>
-                      <Button>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Interaction
-                      </Button>
-                    </div>
+                    <InteractionTracker
+                      influencerId={selectedInfluencerData.id}
+                      interactions={interactions[selectedInfluencerData.id] || []}
+                      onAddInteraction={(interaction) => handleAddInteraction(selectedInfluencerData.id, interaction)}
+                      onUpdateInteraction={(id, updates) => handleUpdateInteraction(selectedInfluencerData.id, id, updates)}
+                      onDeleteInteraction={(id) => handleDeleteInteraction(selectedInfluencerData.id, id)}
+                    />
                   </TabsContent>
 
                   <TabsContent value="campaigns" className="space-y-4">

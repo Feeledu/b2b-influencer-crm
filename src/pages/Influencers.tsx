@@ -12,6 +12,14 @@ import { useMyInfluencers, useInfluencerActions } from "@/hooks/useInfluencers";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
+  STATUS_CONFIG, 
+  getStatusProgression, 
+  getStatusSuggestions,
+  InfluencerStatus,
+  InteractionType 
+} from "@/lib/statusProgression";
+import InteractionTracker from "@/components/InteractionTracker";
+import { 
   Search, 
   Filter, 
   Users, 
@@ -30,7 +38,12 @@ import {
   BarChart3,
   UserPlus,
   Clock,
-  Trash2
+  Trash2,
+  MessageSquare,
+  ArrowRight,
+  Lightbulb,
+  Activity,
+  Settings
 } from "lucide-react";
 
 const Influencers = () => {
@@ -42,6 +55,8 @@ const Influencers = () => {
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
   const [addedInfluencerIds, setAddedInfluencerIds] = useState<Set<string>>(new Set());
+  const [selectedInfluencer, setSelectedInfluencer] = useState<string | null>(null);
+  const [interactions, setInteractions] = useState<Record<string, InteractionType[]>>({});
   
   // Use real API hook for my influencers
   const { 
@@ -56,7 +71,7 @@ const Influencers = () => {
   });
 
   // Get influencer actions
-  const { removeFromMyList } = useInfluencerActions();
+  const { removeFromMyList, updateInfluencer } = useInfluencerActions();
 
   // Handle removing influencer from list
   const handleRemoveInfluencer = async (influencerId: string) => {
@@ -68,6 +83,55 @@ const Influencers = () => {
     } catch (error) {
       console.error("Error removing influencer:", error);
     }
+  };
+
+  // Handle status progression
+  const handleStatusUpdate = async (influencerId: string, newStatus: InfluencerStatus) => {
+    try {
+      // Map new status to old status for API compatibility
+      const apiStatus = newStatus === 'engaged' ? 'warm' : 
+                       newStatus === 'qualified' ? 'warm' : 
+                       newStatus;
+      
+      const success = await updateInfluencer(influencerId, { status: apiStatus as any });
+      if (success) {
+        refetchMyInfluencers();
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+    }
+  };
+
+  // Handle adding interaction
+  const handleAddInteraction = (influencerId: string, interaction: Omit<InteractionType, 'id' | 'timestamp'>) => {
+    const newInteraction: InteractionType = {
+      ...interaction,
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString()
+    };
+    
+    setInteractions(prev => ({
+      ...prev,
+      [influencerId]: [...(prev[influencerId] || []), newInteraction]
+    }));
+  };
+
+  // Handle updating interaction
+  const handleUpdateInteraction = (influencerId: string, interactionId: string, updates: Partial<InteractionType>) => {
+    setInteractions(prev => ({
+      ...prev,
+      [influencerId]: prev[influencerId]?.map(i => 
+        i.id === interactionId ? { ...i, ...updates } : i
+      ) || []
+    }));
+  };
+
+  // Handle deleting interaction
+  const handleDeleteInteraction = (influencerId: string, interactionId: string) => {
+    setInteractions(prev => ({
+      ...prev,
+      [influencerId]: prev[influencerId]?.filter(i => i.id !== interactionId) || []
+    }));
   };
 
   // Use real data from API
@@ -208,6 +272,13 @@ const Influencers = () => {
                 <List className="w-4 h-4" />
               </Button>
             </div>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/crm')}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              CRM Workspace
+            </Button>
             <Button
               onClick={() => {
                 console.log('Add Influencer clicked');
@@ -423,9 +494,9 @@ const Influencers = () => {
                     </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                          <Badge className={`${statusColors[userInfluencer.status as keyof typeof statusColors]} flex items-center gap-1`}>
-                            <span>{getStatusEmoji(userInfluencer.status)}</span>
-                            <span>{getStatusLabel(userInfluencer.status)}</span>
+                          <Badge className={`${STATUS_CONFIG[userInfluencer.status as keyof typeof STATUS_CONFIG]?.color || statusColors[userInfluencer.status as keyof typeof statusColors]} flex items-center gap-1`}>
+                            <span>{STATUS_CONFIG[userInfluencer.status as keyof typeof STATUS_CONFIG]?.icon || getStatusEmoji(userInfluencer.status)}</span>
+                            <span>{STATUS_CONFIG[userInfluencer.status as keyof typeof STATUS_CONFIG]?.label || getStatusLabel(userInfluencer.status)}</span>
                           </Badge>
                     </div>
                   </div>
@@ -437,6 +508,67 @@ const Influencers = () => {
                       </Badge>
                     ))}
                       </div>
+
+                      {/* Status Progression Section */}
+                      {(() => {
+                        const influencerInteractions = interactions[influencer.id] || [];
+                        // Map API status to enhanced status
+                        const enhancedStatus = userInfluencer.status === 'warm' ? 'engaged' : 
+                                             userInfluencer.status as InfluencerStatus;
+                        
+                        const progression = getStatusProgression(
+                          enhancedStatus,
+                          influencerInteractions,
+                          userInfluencer.last_contacted_at
+                        );
+                        const suggestions = getStatusSuggestions(progression);
+                        
+                        return (
+                          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <Activity className="h-4 w-4 text-blue-600" />
+                                <span className="text-sm font-medium">Relationship Status</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {progression.relationshipStrength}% strength
+                                </Badge>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSelectedInfluencer(selectedInfluencer === influencer.id ? null : influencer.id)}
+                              >
+                                <MessageSquare className="h-4 w-4 mr-1" />
+                                {selectedInfluencer === influencer.id ? 'Hide' : 'Track'} Interactions
+                              </Button>
+                            </div>
+                            
+                            {progression.nextSuggestedStatus && (
+                              <div className="flex items-center gap-2 mb-2">
+                                <Lightbulb className="h-4 w-4 text-yellow-600" />
+                                <span className="text-sm text-gray-700">
+                                  Suggested next step: {STATUS_CONFIG[progression.nextSuggestedStatus]?.label}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleStatusUpdate(influencer.id, progression.nextSuggestedStatus!)}
+                                  className="text-xs"
+                                >
+                                  <ArrowRight className="h-3 w-3 mr-1" />
+                                  Advance
+                                </Button>
+                              </div>
+                            )}
+                            
+                            {suggestions.length > 0 && (
+                              <div className="text-xs text-gray-600">
+                                {suggestions[0]}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                       
                       <div className="mt-4 flex items-center justify-between">
                         <div className="flex items-center space-x-4 text-sm text-muted-foreground">
@@ -827,6 +959,32 @@ const Influencers = () => {
               <Plus className="w-4 h-4 mr-2" />
               Add Influencer
                 </Button>
+          </div>
+        )}
+
+        {/* Interaction Tracker Modal */}
+        {selectedInfluencer && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Interaction Tracking</h3>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setSelectedInfluencer(null)}
+                  >
+                    ✕
+                  </Button>
+                </div>
+                <InteractionTracker
+                  influencerId={selectedInfluencer}
+                  interactions={interactions[selectedInfluencer] || []}
+                  onAddInteraction={(interaction) => handleAddInteraction(selectedInfluencer, interaction)}
+                  onUpdateInteraction={(id, updates) => handleUpdateInteraction(selectedInfluencer, id, updates)}
+                  onDeleteInteraction={(id) => handleDeleteInteraction(selectedInfluencer, id)}
+                />
+              </div>
+            </div>
           </div>
         )}
 

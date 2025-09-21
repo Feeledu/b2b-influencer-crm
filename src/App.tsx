@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Discover from "./pages/Discover";
 import Influencers from "./pages/Influencers";
+import CRMWorkspace from "./pages/CRMWorkspace";
 import Campaigns from "./pages/Campaigns";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
@@ -54,6 +55,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Discover />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/crm" 
+              element={
+                <ProtectedRoute>
+                  <CRMWorkspace />
                 </ProtectedRoute>
               } 
             />
