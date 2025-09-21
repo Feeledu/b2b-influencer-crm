@@ -168,7 +168,13 @@ const Discover = () => {
 
       return true;
     });
-  }, [influencers, addedInfluencerIds, selectedFilters]);
+  }, [influencers, myInfluencers, selectedFilters]);
+
+  console.log('📊 Final counts:', {
+    totalInfluencers: influencers.length,
+    availableInfluencers: availableInfluencers.length,
+    addedCount: addedInfluencerIds.size
+  });
 
   console.log('Discover page rendering', { 
     loading, 
@@ -490,7 +496,7 @@ const Discover = () => {
             {/* Results Grid */}
             {!loading && !error && (
               <>
-                {influencers.length === 0 ? (
+                {availableInfluencers.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                       <Search className="h-6 w-6 text-gray-400" />
@@ -511,7 +517,7 @@ const Discover = () => {
                   </div>
                 ) : viewMode === "grid" ? (
                   <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-                    {influencers.map((influencer) => {
+                    {availableInfluencers.map((influencer) => {
                       const platformInfo = platformConfig[influencer.platform as keyof typeof platformConfig];
                       const PlatformIcon = platformInfo?.icon || Users;
                       
@@ -616,7 +622,7 @@ const Discover = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {influencers.map((influencer) => {
+                    {availableInfluencers.map((influencer) => {
                       const platformInfo = platformConfig[influencer.platform as keyof typeof platformConfig];
                       const PlatformIcon = platformInfo?.icon || Users;
                       
@@ -791,7 +797,7 @@ const Discover = () => {
               </div>
               
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
-                {influencers
+                {availableInfluencers
                   .sort((a, b) => (b.engagement_rate || 0) - (a.engagement_rate || 0))
                   .map((influencer) => {
                     const platformInfo = platformConfig[influencer.platform as keyof typeof platformConfig];
@@ -1052,12 +1058,12 @@ const Discover = () => {
                 <h3 className="font-semibold mb-2">Platform Distribution</h3>
                 <div className="space-y-2">
                   {(() => {
-                    const platformCounts = influencers.reduce((acc, inf) => {
+                    const platformCounts = availableInfluencers.reduce((acc, inf) => {
                       acc[inf.platform] = (acc[inf.platform] || 0) + 1;
                       return acc;
                     }, {} as Record<string, number>);
                     
-                    const total = influencers.length;
+                    const total = availableInfluencers.length;
                     return Object.entries(platformCounts).map(([platform, count]) => {
                       const percentage = Math.round((count / total) * 100);
                       return (
@@ -1080,9 +1086,9 @@ const Discover = () => {
                 <h3 className="font-semibold mb-2">Engagement Trends</h3>
                 <div className="space-y-2">
                   {(() => {
-                    const highEngagement = influencers.filter(inf => (inf.engagement_rate || 0) >= 7).length;
-                    const mediumEngagement = influencers.filter(inf => (inf.engagement_rate || 0) >= 4 && (inf.engagement_rate || 0) < 7).length;
-                    const lowEngagement = influencers.filter(inf => (inf.engagement_rate || 0) < 4).length;
+                    const highEngagement = availableInfluencers.filter(inf => (inf.engagement_rate || 0) >= 7).length;
+                    const mediumEngagement = availableInfluencers.filter(inf => (inf.engagement_rate || 0) >= 4 && (inf.engagement_rate || 0) < 7).length;
+                    const lowEngagement = availableInfluencers.filter(inf => (inf.engagement_rate || 0) < 4).length;
                     
                     return (
                       <>
@@ -1108,9 +1114,9 @@ const Discover = () => {
                 <h3 className="font-semibold mb-2">Audience Alignment</h3>
                 <div className="space-y-2">
                   {(() => {
-                    const highAlignment = influencers.filter(inf => (inf.audience_alignment?.alignment_score || 0) >= 90).length;
-                    const mediumAlignment = influencers.filter(inf => (inf.audience_alignment?.alignment_score || 0) >= 70 && (inf.audience_alignment?.alignment_score || 0) < 90).length;
-                    const lowAlignment = influencers.filter(inf => (inf.audience_alignment?.alignment_score || 0) < 70).length;
+                    const highAlignment = availableInfluencers.filter(inf => (inf.audience_alignment?.alignment_score || 0) >= 90).length;
+                    const mediumAlignment = availableInfluencers.filter(inf => (inf.audience_alignment?.alignment_score || 0) >= 70 && (inf.audience_alignment?.alignment_score || 0) < 90).length;
+                    const lowAlignment = availableInfluencers.filter(inf => (inf.audience_alignment?.alignment_score || 0) < 70).length;
                     
                     return (
                       <>

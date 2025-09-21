@@ -30,12 +30,15 @@ import {
   Activity,
   Settings,
   UserPlus,
-  Trash2
+  Trash2,
+  Loader2
 } from "lucide-react";
 import CreateCampaignForm from "@/components/CreateCampaignForm";
 import { useSubscription } from "@/contexts/SubscriptionContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useCampaigns, useCreateCampaign, useUpdateCampaign, useDeleteCampaign } from "@/hooks/useCampaigns";
+import { apiService } from "@/lib/api";
 
 const Campaigns = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -54,114 +57,38 @@ const Campaigns = () => {
   ]);
   const { canCreateCampaign, isTrialActive, daysRemaining } = useSubscription();
   const navigate = useNavigate();
-  
-  // Mock data for development
-  const mockCampaigns = [
-    {
-      id: 1,
-      name: "Q4 SaaS Podcast Outreach",
-      description: "Target top SaaS podcasts for product launch awareness",
-      status: "Active",
-      startDate: "Oct 15, 2024",
-      endDate: "Dec 31, 2024",
-      budget: "$25,000",
-      spent: "$12,450",
-      influencers: 8,
-      leads: 24,
-      demos: 12,
-      revenue: "$48,600",
-      roi: "3.9x",
-      progress: 65,
-      assignedInfluencers: [
-        { name: "Sarah Chen", platform: "Podcast" },
-        { name: "Mike Rodriguez", platform: "LinkedIn" }
-      ],
-      utmLink: "https://fluencr.com/campaign/q4-podcast?utm_source=influencer&utm_medium=podcast&utm_campaign=q4-saas"
-    },
-    {
-      id: 2,
-      name: "LinkedIn Creator Partnership",
-      description: "Collaborate with B2B marketing thought leaders",
-      status: "Planning",
-      startDate: "Nov 1, 2024",
-      endDate: "Jan 31, 2025",
-      budget: "$15,000",
-      spent: "$0",
-      influencers: 5,
-      leads: 0,
-      demos: 0,
-      revenue: "$0",
-      roi: "-",
-      progress: 15,
-      assignedInfluencers: [],
-      utmLink: null
-    },
-    {
-      id: 3,
-      name: "Newsletter Sponsorship Series",
-      description: "Strategic placements in top B2B newsletters",
-      status: "Completed",
-      startDate: "Aug 1, 2024",
-      endDate: "Sep 30, 2024",
-      budget: "$18,000",
-      spent: "$17,250",
-      influencers: 6,
-      leads: 31,
-      demos: 18,
-      revenue: "$89,400",
-      roi: "5.2x",
-      progress: 100,
-      assignedInfluencers: [
-        { name: "David Park", platform: "Newsletter" },
-        { name: "Emma Wilson", platform: "Newsletter" }
-      ],
-      utmLink: "https://fluencr.com/campaign/newsletter-series?utm_source=influencer&utm_medium=newsletter&utm_campaign=sponsorship"
-    },
-    {
-      id: 4,
-      name: "Industry Conference Speakers",
-      description: "Partner with conference speakers for post-event content",
-      status: "Paused",
-      startDate: "Sep 15, 2024",
-      endDate: "Nov 15, 2024",
-      budget: "$12,000",
-      spent: "$3,200",
-      influencers: 4,
-      leads: 7,
-      demos: 3,
-      revenue: "$12,900",
-      roi: "4.0x",
-      progress: 25,
-      assignedInfluencers: [
-        { name: "Alex Johnson", platform: "YouTube" }
-      ],
-      utmLink: "https://fluencr.com/campaign/conference-speakers?utm_source=influencer&utm_medium=youtube&utm_campaign=conference"
-    }
-  ];
 
-  // Use mock data
-  const campaigns = mockCampaigns;
+  // Use real API data
+  const { data: campaigns = [], isLoading, error, refetch } = useCampaigns();
+  const createCampaignMutation = useCreateCampaign();
+  const updateCampaignMutation = useUpdateCampaign();
+  const deleteCampaignMutation = useDeleteCampaign();
 
   const getStatusConfig = (status: string) => {
-    switch(status) {
-      case "Active":
+    switch(status?.toLowerCase()) {
+      case "active":
         return {
           color: "bg-success text-success-foreground",
           icon: PlayCircle
         };
-      case "Planning":
+      case "planning":
         return {
           color: "bg-warning text-warning-foreground", 
           icon: Clock
         };
-      case "Completed":
+      case "completed":
         return {
           color: "bg-primary text-primary-foreground",
           icon: CheckCircle2
         };
-      case "Paused":
+      case "paused":
         return {
           color: "bg-muted text-muted-foreground",
+          icon: AlertCircle
+        };
+      case "cancelled":
+        return {
+          color: "bg-destructive text-destructive-foreground",
           icon: AlertCircle
         };
       default:
@@ -172,9 +99,29 @@ const Campaigns = () => {
     }
   };
 
-  const handleCreateCampaign = (newCampaign: any) => {
-    // TODO: Implement API call to create campaign
-    setShowCreateForm(false);
+  const handleCreateCampaign = async (newCampaign: any) => {
+    try {
+      // Transform the form data to match the API schema
+      const campaignData = {
+        name: newCampaign.name,
+        description: newCampaign.description,
+        status: 'planning' as const,
+        start_date: newCampaign.startDate,
+        end_date: newCampaign.endDate,
+        budget: parseFloat(newCampaign.budget.replace(/[$,]/g, '')),
+        target_audience: newCampaign.targetAudience,
+        goals: newCampaign.goals ? [newCampaign.goals] : [],
+        utm_source: newCampaign.utmSource,
+        utm_medium: newCampaign.utmMedium,
+        utm_campaign: newCampaign.utmCampaign,
+        utm_url: newCampaign.utmLink
+      };
+      
+      await createCampaignMutation.mutateAsync(campaignData);
+      setShowCreateForm(false);
+    } catch (error) {
+      console.error('Failed to create campaign:', error);
+    }
   };
 
   const handleCancelCreate = () => {
@@ -199,11 +146,25 @@ const Campaigns = () => {
     setIsEditing(true);
   };
 
-  const handleSaveEdit = () => {
-    // TODO: Implement API call to update campaign
-    // For now, just update the local state
-    setSelectedCampaign({ ...selectedCampaign, ...editForm });
-    setIsEditing(false);
+  const handleSaveEdit = async () => {
+    try {
+      const campaignData = {
+        name: editForm.name,
+        description: editForm.description,
+        status: editForm.status,
+        budget: parseFloat(editForm.budget?.replace(/[$,]/g, '') || '0'),
+        utm_url: editForm.utmLink
+      };
+      
+      await updateCampaignMutation.mutateAsync({ 
+        campaignId: selectedCampaign.id, 
+        data: campaignData 
+      });
+      setSelectedCampaign({ ...selectedCampaign, ...editForm });
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update campaign:', error);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -277,10 +238,14 @@ const Campaigns = () => {
     setShowDeleteConfirm(true);
   };
 
-  const confirmDeleteCampaign = () => {
-    // TODO: Implement API call to delete campaign
-    handleCloseDetails();
-    setShowDeleteConfirm(false);
+  const confirmDeleteCampaign = async () => {
+    try {
+      await deleteCampaignMutation.mutateAsync(selectedCampaign.id);
+      handleCloseDetails();
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error('Failed to delete campaign:', error);
+    }
   };
 
   const cancelDeleteCampaign = () => {
@@ -330,80 +295,131 @@ const Campaigns = () => {
           <Button 
             className="bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-secondary-dark shadow-lg hover:shadow-xl"
             onClick={() => setShowCreateForm(true)}
-            disabled={!canCreateCampaign}
+            disabled={!canCreateCampaign || createCampaignMutation.isPending}
           >
-            <Plus className="h-4 w-4" />
+            {createCampaignMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
             {!canCreateCampaign ? 'Upgrade to Create Campaigns' : 'New Campaign'}
           </Button>
         </div>
 
-        {/* Overview Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 hover:shadow-lg transition-all">
-            <div className="flex items-center justify-between">
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <p className="text-muted-foreground">Loading campaigns...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <AlertCircle className="w-12 h-12 text-destructive" />
               <div>
-                <p className="text-sm font-medium text-primary flex items-center gap-2">
-                  <Target className="h-4 w-4" />
-                  Active Campaigns
-                </p>
-                <p className="text-2xl font-bold">4</p>
-                <div className="flex items-center">
-                  <ArrowUpRight className="h-3 w-3 text-success mr-1" />
-                  <p className="text-xs text-success font-medium">+1 from last month</p>
+                <h3 className="text-lg font-semibold text-destructive">Error Loading Campaigns</h3>
+                <p className="text-muted-foreground">{error.message}</p>
+              </div>
+              <Button variant="outline" onClick={() => refetch()}>
+                Try Again
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Overview Stats - Only show when not loading and no error */}
+        {!isLoading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <Card className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 hover:shadow-lg transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-primary flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Active Campaigns
+                  </p>
+                  <p className="text-2xl font-bold">
+                    {campaigns.filter(c => c.status === 'active').length}
+                  </p>
+                  <div className="flex items-center">
+                    <ArrowUpRight className="h-3 w-3 text-success mr-1" />
+                    <p className="text-xs text-success font-medium">
+                      {campaigns.filter(c => c.status === 'planning').length} planning
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
-          
-          <Card className="p-6 bg-gradient-to-br from-success/10 to-success/5 border-success/20 hover:shadow-lg transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-success flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  ROI
-                </p>
-                <p className="text-2xl font-bold">4.3x</p>
-                <div className="flex items-center">
-                  <ArrowUpRight className="h-3 w-3 text-success mr-1" />
-                  <p className="text-xs text-success font-medium">+0.2x this quarter</p>
+            </Card>
+            
+            <Card className="p-6 bg-gradient-to-br from-success/10 to-success/5 border-success/20 hover:shadow-lg transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-success flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Avg ROI
+                  </p>
+                  <p className="text-2xl font-bold">
+                    {campaigns.length > 0 
+                      ? (campaigns.reduce((sum, c) => sum + (c.roi || 0), 0) / campaigns.length).toFixed(1) + 'x'
+                      : '0x'
+                    }
+                  </p>
+                  <div className="flex items-center">
+                    <ArrowUpRight className="h-3 w-3 text-success mr-1" />
+                    <p className="text-xs text-success font-medium">
+                      {campaigns.filter(c => c.status === 'completed').length} completed
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
-          
-          <Card className="p-6 bg-gradient-to-br from-secondary/10 to-secondary/5 border-secondary/20 hover:shadow-lg transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-secondary flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Pipeline
-                </p>
-                <p className="text-2xl font-bold">$127K</p>
-                <div className="flex items-center">
-                  <ArrowUpRight className="h-3 w-3 text-success mr-1" />
-                  <p className="text-xs text-success font-medium">+18% this month</p>
+            </Card>
+            
+            <Card className="p-6 bg-gradient-to-br from-secondary/10 to-secondary/5 border-secondary/20 hover:shadow-lg transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-secondary flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Total Revenue
+                  </p>
+                  <p className="text-2xl font-bold">
+                    ${campaigns.reduce((sum, c) => sum + (c.revenue || 0), 0).toLocaleString()}
+                  </p>
+                  <div className="flex items-center">
+                    <ArrowUpRight className="h-3 w-3 text-success mr-1" />
+                    <p className="text-xs text-success font-medium">
+                      {campaigns.reduce((sum, c) => sum + (c.leads || 0), 0)} total leads
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
-          
-          <Card className="p-6 bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20 hover:shadow-lg transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-warning flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Influencers
-                </p>
-                <p className="text-2xl font-bold">23</p>
-                <p className="text-xs text-muted-foreground">Active partnerships</p>
-                <div className="flex items-center">
-                  <ArrowUpRight className="h-3 w-3 text-success mr-1" />
-                  <p className="text-xs text-success font-medium">+12 this month</p>
+            </Card>
+            
+            <Card className="p-6 bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20 hover:shadow-lg transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-warning flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Total Campaigns
+                  </p>
+                  <p className="text-2xl font-bold">{campaigns.length}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {campaigns.filter(c => c.status === 'paused').length} paused
+                  </p>
+                  <div className="flex items-center">
+                    <ArrowUpRight className="h-3 w-3 text-success mr-1" />
+                    <p className="text-xs text-success font-medium">
+                      {campaigns.reduce((sum, c) => sum + (c.demos || 0), 0)} demos
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
-        </div>
+            </Card>
+          </div>
+        )}
 
         {/* Create Campaign Form */}
         {showCreateForm && (
@@ -413,135 +429,144 @@ const Campaigns = () => {
           />
         )}
 
-        {/* Campaign Cards */}
-        <div className="space-y-6">
-          {campaigns.map((campaign) => {
-            const statusConfig = getStatusConfig(campaign.status);
-            const StatusIcon = statusConfig.icon;
-            
-            return (
-              <Card key={campaign.id} className="p-6 hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-card to-card-glow">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
-                      <StatusIcon className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-xl font-bold">{campaign.name}</h3>
-                        <Badge className={statusConfig.color}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {campaign.status}
-                        </Badge>
-                      </div>
-                      <p className="text-muted-foreground mb-3">{campaign.description}</p>
-                      <div className="flex items-center space-x-6 text-sm text-muted-foreground">
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="h-4 w-4" />
-                          <span>{campaign.startDate} - {campaign.endDate}</span>
+        {/* Campaign Cards - Only show when not loading and no error */}
+        {!isLoading && !error && (
+          <div className="space-y-6">
+            {campaigns.map((campaign) => {
+                const statusConfig = getStatusConfig(campaign.status);
+                const StatusIcon = statusConfig.icon;
+                
+                return (
+                  <Card key={campaign.id} className="p-6 hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-card to-card-glow">
+                    <div className="flex items-start justify-between mb-6">
+                      <div className="flex items-start space-x-4">
+                        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
+                          <StatusIcon className="h-6 w-6 text-white" />
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <Users className="h-4 w-4" />
-                          <span>{campaign.influencers || 0} influencers</span>
+                        <div>
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h3 className="text-xl font-bold">{campaign.name}</h3>
+                            <Badge className={statusConfig.color}>
+                              <StatusIcon className="h-3 w-3 mr-1" />
+                              {campaign.status?.charAt(0).toUpperCase() + campaign.status?.slice(1)}
+                            </Badge>
+                          </div>
+                          <p className="text-muted-foreground mb-3">{campaign.description}</p>
+                          <div className="flex items-center space-x-6 text-sm text-muted-foreground">
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="h-4 w-4" />
+                              <span>
+                                {campaign.start_date ? new Date(campaign.start_date).toLocaleDateString() : 'No start date'} - 
+                                {campaign.end_date ? new Date(campaign.end_date).toLocaleDateString() : 'No end date'}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Users className="h-4 w-4" />
+                              <span>Campaign ID: {campaign.id.slice(0, 8)}...</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
+                      
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
                     </div>
-                  </div>
-                  
-                  <Button variant="ghost" size="icon">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </div>
 
-                {/* Progress Bar */}
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Campaign Progress</span>
-                    <span className="text-sm text-muted-foreground">{campaign.progress}%</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${campaign.progress}%` }}
-                    />
-                  </div>
-                </div>
+                    {/* Progress Bar */}
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Campaign Progress</span>
+                        <span className="text-sm text-muted-foreground">{campaign.progress || 0}%</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${campaign.progress || 0}%` }}
+                        />
+                      </div>
+                    </div>
 
-                {/* Assigned Influencers */}
-                {campaign.assignedInfluencers && campaign.assignedInfluencers.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Assigned Influencers ({campaign.assignedInfluencers.length})
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {campaign.assignedInfluencers.map((influencer: any, idx: number) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          {influencer.name} ({influencer.platform})
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                    {/* UTM Link Display */}
+                    {campaign.utm_url && (
+                      <div className="mb-6 p-3 bg-muted/30 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-muted-foreground mb-1">UTM Tracking Link</p>
+                            <p className="text-xs font-mono text-blue-600 truncate">{campaign.utm_url}</p>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => navigator.clipboard.writeText(campaign.utm_url)}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
-                {/* Metrics Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-                  <div className="text-center p-3 rounded-lg bg-muted/30">
-                    <div className="text-sm text-muted-foreground mb-1 flex items-center justify-center gap-1">
-                      <DollarSign className="h-3 w-3" />
-                      Budget
+                    {/* Metrics Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                      <div className="text-center p-3 rounded-lg bg-muted/30">
+                        <div className="text-sm text-muted-foreground mb-1 flex items-center justify-center gap-1">
+                          <DollarSign className="h-3 w-3" />
+                          Budget
+                        </div>
+                        <div className="font-bold">${(campaign.budget || 0).toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground">Spent: ${(campaign.spent || 0).toLocaleString()}</div>
+                      </div>
+                      
+                      <div className="text-center p-3 rounded-lg bg-muted/30">
+                        <div className="text-sm text-muted-foreground mb-1 flex items-center justify-center gap-1">
+                          <Target className="h-3 w-3" />
+                          Leads
+                        </div>
+                        <div className="font-bold text-2xl">{campaign.leads || 0}</div>
+                      </div>
+                      
+                      <div className="text-center p-3 rounded-lg bg-muted/30">
+                        <div className="text-sm text-muted-foreground mb-1 flex items-center justify-center gap-1">
+                          <PlayCircle className="h-3 w-3" />
+                          Demos
+                        </div>
+                        <div className="font-bold text-2xl">{campaign.demos || 0}</div>
+                      </div>
+                      
+                      <div className="text-center p-3 rounded-lg bg-muted/30">
+                        <div className="text-sm text-muted-foreground mb-1 flex items-center justify-center gap-1">
+                          <TrendingUp className="h-3 w-3" />
+                          Revenue
+                        </div>
+                        <div className="font-bold">${(campaign.revenue || 0).toLocaleString()}</div>
+                      </div>
+                      
+                      <div className="text-center p-3 rounded-lg bg-gradient-to-br from-success/20 to-success/10 border border-success/20">
+                        <div className="text-sm text-success mb-1 flex items-center justify-center gap-1">
+                          <TrendingUp className="h-3 w-3" />
+                          ROI
+                        </div>
+                        <div className="font-bold text-2xl text-success">
+                          {campaign.roi ? `${campaign.roi}x` : '0x'}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-center">
+                        <Button 
+                          size="sm" 
+                          className="bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-secondary-dark"
+                          onClick={() => handleViewDetails(campaign)}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          View Details
+                        </Button>
+                      </div>
                     </div>
-                    <div className="font-bold">{campaign.budget}</div>
-                    <div className="text-xs text-muted-foreground">Spent: {campaign.spent}</div>
-                  </div>
-                  
-                  <div className="text-center p-3 rounded-lg bg-muted/30">
-                    <div className="text-sm text-muted-foreground mb-1 flex items-center justify-center gap-1">
-                      <Target className="h-3 w-3" />
-                      Leads
-                    </div>
-                    <div className="font-bold text-2xl">{campaign.leads}</div>
-                  </div>
-                  
-                  <div className="text-center p-3 rounded-lg bg-muted/30">
-                    <div className="text-sm text-muted-foreground mb-1 flex items-center justify-center gap-1">
-                      <PlayCircle className="h-3 w-3" />
-                      Demos
-                    </div>
-                    <div className="font-bold text-2xl">{campaign.demos}</div>
-                  </div>
-                  
-                  <div className="text-center p-3 rounded-lg bg-muted/30">
-                    <div className="text-sm text-muted-foreground mb-1 flex items-center justify-center gap-1">
-                      <TrendingUp className="h-3 w-3" />
-                      Revenue
-                    </div>
-                    <div className="font-bold">{campaign.revenue}</div>
-                  </div>
-                  
-                  <div className="text-center p-3 rounded-lg bg-gradient-to-br from-success/20 to-success/10 border border-success/20">
-                    <div className="text-sm text-success mb-1 flex items-center justify-center gap-1">
-                      <TrendingUp className="h-3 w-3" />
-                      ROI
-                    </div>
-                    <div className="font-bold text-2xl text-success">{campaign.roi}</div>
-                  </div>
-                  
-                  <div className="flex items-center justify-center">
-                    <Button 
-                      size="sm" 
-                      className="bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-secondary-dark"
-                      onClick={() => handleViewDetails(campaign)}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      View Details
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+                  </Card>
+                );
+              })}
+          </div>
+        )}
 
         {/* Quick Actions */}
         <Card className="p-6 bg-gradient-to-r from-primary/5 to-secondary/5 border-primary/20">
@@ -595,10 +620,11 @@ const Campaigns = () => {
                       )}
                       <div className="flex items-center space-x-2 mt-1">
                         <Badge className={getStatusConfig(selectedCampaign.status).color}>
-                          {selectedCampaign.status}
+                          {selectedCampaign.status?.charAt(0).toUpperCase() + selectedCampaign.status?.slice(1)}
                         </Badge>
                         <span className="text-sm text-muted-foreground">
-                          {selectedCampaign.startDate} - {selectedCampaign.endDate}
+                          {selectedCampaign.start_date ? new Date(selectedCampaign.start_date).toLocaleDateString() : 'No start date'} - 
+                          {selectedCampaign.end_date ? new Date(selectedCampaign.end_date).toLocaleDateString() : 'No end date'}
                         </span>
                       </div>
                     </div>
@@ -728,9 +754,9 @@ const Campaigns = () => {
                             className="text-xl font-bold border-none p-0 h-auto"
                           />
                         ) : (
-                          <p className="text-xl font-bold">{selectedCampaign.budget}</p>
+                          <p className="text-xl font-bold">${(selectedCampaign.budget || 0).toLocaleString()}</p>
                         )}
-                        <p className="text-xs text-muted-foreground">Spent: {selectedCampaign.spent}</p>
+                        <p className="text-xs text-muted-foreground">Spent: ${(selectedCampaign.spent || 0).toLocaleString()}</p>
                       </div>
 
                       <div className="p-4 rounded-lg bg-gradient-to-br from-success/10 to-success/5 border border-success/20">
@@ -738,7 +764,7 @@ const Campaigns = () => {
                           <Users className="h-4 w-4 text-success" />
                           <span className="text-xs text-muted-foreground">Influencers</span>
                         </div>
-                        <p className="text-xl font-bold">{selectedCampaign.influencers}</p>
+                        <p className="text-xl font-bold">0</p>
                         <p className="text-xs text-muted-foreground">Active partnerships</p>
                       </div>
 
@@ -747,7 +773,7 @@ const Campaigns = () => {
                           <Target className="h-4 w-4 text-warning" />
                           <span className="text-xs text-muted-foreground">Leads</span>
                         </div>
-                        <p className="text-xl font-bold">{selectedCampaign.leads}</p>
+                        <p className="text-xl font-bold">{selectedCampaign.leads || 0}</p>
                         <p className="text-xs text-muted-foreground">Generated</p>
                       </div>
 
@@ -756,13 +782,15 @@ const Campaigns = () => {
                           <TrendingUp className="h-4 w-4 text-secondary" />
                           <span className="text-xs text-muted-foreground">ROI</span>
                         </div>
-                        <p className="text-xl font-bold text-success">{selectedCampaign.roi}</p>
+                        <p className="text-xl font-bold text-success">
+                          {selectedCampaign.roi ? `${selectedCampaign.roi}x` : '0x'}
+                        </p>
                         <p className="text-xs text-muted-foreground">Return on investment</p>
                       </div>
                     </div>
 
                     {/* UTM Link Management */}
-                    {(selectedCampaign.utmLink || isEditing) && (
+                    {(selectedCampaign.utm_url || isEditing) && (
                       <div className="p-4 rounded-lg bg-muted/30 border">
                         <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                           <ExternalLink className="h-4 w-4" />
@@ -771,29 +799,29 @@ const Campaigns = () => {
                         <div className="flex items-center space-x-2">
                           {isEditing ? (
                             <Input
-                              value={editForm.utmLink ?? ''}
-                              onChange={(e) => handleInputChange('utmLink', e.target.value)}
+                              value={editForm.utm_url ?? selectedCampaign.utm_url ?? ''}
+                              onChange={(e) => handleInputChange('utm_url', e.target.value)}
                               className="flex-1 font-mono text-sm text-blue-600"
                               placeholder="Enter UTM tracking link..."
                             />
                           ) : (
                             <div className="flex-1 p-3 bg-background rounded border">
                               <p className="text-sm font-mono text-blue-600 break-all">
-                                {selectedCampaign.utmLink || 'No UTM link set'}
+                                {selectedCampaign.utm_url || 'No UTM link set'}
                               </p>
                             </div>
                           )}
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={handleCopyUTM}
-                            disabled={!selectedCampaign.utmLink}
+                            onClick={() => navigator.clipboard.writeText(selectedCampaign.utm_url || '')}
+                            disabled={!selectedCampaign.utm_url}
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
                         </div>
                         <div className="mt-2 text-xs text-muted-foreground">
-                          Clicks: 1,247 • Conversions: 23 • CTR: 1.8%
+                          Clicks: {selectedCampaign.total_clicks || 0} • Conversions: {selectedCampaign.conversions || 0} • CTR: {selectedCampaign.conversion_rate || 0}%
                         </div>
                         {isEditing && (
                           <div className="mt-2 text-xs text-muted-foreground">

@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { X, Save, Copy, Link, Users, Loader2, TrendingUp, Target } from 'lucide-react';
-import { useMyInfluencers } from '@/hooks/useInfluencers';
+import { X, Save, Copy, Link, Users } from 'lucide-react';
 
 interface CreateCampaignFormProps {
   onSave: (campaign: any) => void;
@@ -30,8 +29,15 @@ const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSave, onCance
   const [assignedInfluencers, setAssignedInfluencers] = useState<string[]>([]);
   const [generatedUtm, setGeneratedUtm] = useState('');
 
-  // Get real influencers from database
-  const { myInfluencers, loading: influencersLoading, error: influencersError } = useMyInfluencers({ limit: 50 });
+  // Mock influencers for assignment
+  const availableInfluencers = [
+    { id: '1', name: 'John Doe', platform: 'LinkedIn', followers: '15K' },
+    { id: '2', name: 'Sarah Chen', platform: 'Twitter', followers: '8.5K' },
+    { id: '3', name: 'Mike Rodriguez', platform: 'Newsletter', followers: '12K' },
+    { id: '4', name: 'Alex Kim', platform: 'Podcast', followers: '25K' },
+    { id: '5', name: 'Emma Wilson', platform: 'LinkedIn', followers: '18K' },
+    { id: '6', name: 'David Park', platform: 'Newsletter', followers: '9.5K' }
+  ];
 
   const generateUtmLink = () => {
     if (!formData.websiteUrl || !formData.utmSource || !formData.utmMedium || !formData.utmCampaign) {
@@ -83,7 +89,7 @@ const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSave, onCance
       progress: 0,
       utmLink: generatedUtm,
       assignedInfluencers: assignedInfluencers.map(id => 
-        myInfluencers.find(inf => inf.influencer.id === id)?.influencer
+        availableInfluencers.find(inf => inf.id === id)
       ).filter(Boolean)
     };
 
@@ -256,64 +262,29 @@ const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSave, onCance
             <Users className="h-5 w-5" />
             Assign Influencers ({assignedInfluencers.length} selected)
           </h4>
-
-          {influencersLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <span className="ml-2 text-muted-foreground">Loading influencers...</span>
-            </div>
-          ) : influencersError ? (
-            <div className="text-center py-8 text-red-500">
-              Error loading influencers: {influencersError}
-            </div>
-          ) : myInfluencers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No influencers saved yet. Go to the Influencers page to add some first.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {myInfluencers.map((userInfluencer) => {
-                const influencer = userInfluencer.influencer;
-                return (
-                  <div
-                    key={influencer.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                      assignedInfluencers.includes(influencer.id)
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => toggleInfluencer(influencer.id)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h5 className="font-medium">{influencer.name}</h5>
-                        <p className="text-sm text-gray-600 mb-1">
-                          {influencer.platform} • {influencer.industry}
-                        </p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <TrendingUp className="h-3 w-3" />
-                            {(influencer.audience_size || 0).toLocaleString()} followers
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Target className="h-3 w-3" />
-                            {influencer.engagement_rate || 0}% engagement
-                          </span>
-                        </div>
-                        {influencer.bio && (
-                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{influencer.bio}</p>
-                        )}
-                      </div>
-                      {assignedInfluencers.includes(influencer.id) && (
-                        <Badge variant="default" className="text-xs">Selected</Badge>
-                      )}
-                    </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {availableInfluencers.map((influencer) => (
+              <div
+                key={influencer.id}
+                className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                  assignedInfluencers.includes(influencer.id)
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => toggleInfluencer(influencer.id)}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h5 className="font-medium">{influencer.name}</h5>
+                    <p className="text-sm text-gray-600">{influencer.platform} • {influencer.followers}</p>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                  {assignedInfluencers.includes(influencer.id) && (
+                    <Badge variant="default" className="text-xs">Selected</Badge>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="flex justify-end space-x-3 pt-4">
