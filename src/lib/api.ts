@@ -63,6 +63,8 @@ interface UserInfluencer {
   priority: number;
   tags?: string[];
   last_contacted_at?: string;
+  relationship_strength?: number;
+  follow_up_date?: string;
   created_at: string;
   updated_at: string;
   influencer?: Influencer;

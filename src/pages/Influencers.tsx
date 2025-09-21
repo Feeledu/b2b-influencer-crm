@@ -41,241 +41,26 @@ const Influencers = () => {
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
   const [addedInfluencerIds, setAddedInfluencerIds] = useState<Set<string>>(new Set());
-  const [myInfluencers, setMyInfluencers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  
+  // Use real API hook for my influencers
+  const { 
+    myInfluencers, 
+    loading, 
+    error, 
+    pagination,
+    refetch: refetchMyInfluencers 
+  } = useMyInfluencers({
+    page: 1,
+    limit: 50
+  });
 
-  // Mock data for demo mode when API fails - includes all influencers from Discover page
-  const mockInfluencers = [
-    {
-      id: '1',
-      influencer_id: 'inf_1',
-      influencer: {
-        id: '1', // Match Discover page ID
-        name: 'John Doe',
-        platform: 'LinkedIn',
-        industry: 'Technology',
-        bio: 'SaaS growth expert helping startups scale through content marketing.',
-        handle: '@johndoe',
-        website_url: 'https://johndoe.com',
-        audience_size: 15000,
-        engagement_rate: 4.2,
-        is_verified: true,
-        expertise_tags: ['SaaS', 'Growth', 'Marketing'],
-        location: 'San Francisco, CA'
-      },
-      status: 'partnered',
-      priority: 'high',
-      relationship_strength: 85,
-      follow_up_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      notes: 'Great partnership potential, very responsive',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: '2',
-      influencer_id: 'inf_2',
-      influencer: {
-        id: '2', // Match Discover page ID
-        name: 'Sarah Chen',
-        platform: 'Twitter',
-        industry: 'Product',
-        bio: 'Product manager turned content creator sharing insights on product development.',
-        handle: '@sarahchen',
-        website_url: 'https://sarahchen.com',
-        audience_size: 8500,
-        engagement_rate: 6.8,
-        is_verified: false,
-        expertise_tags: ['Product Management', 'UX', 'Design'],
-        location: 'New York, NY'
-      },
-      status: 'warm',
-      priority: 'medium',
-      relationship_strength: 60,
-      follow_up_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-      notes: 'Interested in collaboration, needs follow-up',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: '3',
-      influencer_id: 'inf_3',
-      influencer: {
-        id: '3', // Match Discover page ID
-        name: 'Emily White',
-        platform: 'YouTube',
-        industry: 'Education',
-        bio: 'Educator and consultant in AI and machine learning for business.',
-        handle: '@emilywhite',
-        website_url: 'https://emilywhite.com',
-        audience_size: 50000,
-        engagement_rate: 5.1,
-        is_verified: false,
-        expertise_tags: ['AI', 'Machine Learning', 'Data Science'],
-        location: 'Boston, MA'
-      },
-      status: 'cold',
-      priority: 'low',
-      relationship_strength: 30,
-      follow_up_date: null,
-      notes: 'Initial contact made, waiting for response',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: '4',
-      influencer_id: 'inf_4',
-      influencer: {
-        id: '4', // Match Discover page ID
-        name: 'David Green',
-        platform: 'Podcast',
-        industry: 'Finance',
-        bio: 'Host of "Fintech Forward" podcast. Exploring innovation in finance.',
-        handle: '@davidgreen',
-        website_url: 'https://davidgreen.com',
-        audience_size: 30000,
-        engagement_rate: 6.5,
-        is_verified: true,
-        expertise_tags: ['Fintech', 'Blockchain', 'Investments'],
-        location: 'London, UK'
-      },
-      status: 'contacted',
-      priority: 'medium',
-      relationship_strength: 45,
-      follow_up_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-      notes: 'Podcast collaboration discussed',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: '5',
-      influencer_id: 'inf_5',
-      influencer: {
-        id: '5', // Match Discover page ID
-        name: 'Sarah Connor',
-        platform: 'Newsletter',
-        industry: 'Cybersecurity',
-        bio: 'Weekly insights on cybersecurity trends and best practices.',
-        handle: '@sarahconnor',
-        website_url: 'https://sarahconnor.com',
-        audience_size: 8000,
-        engagement_rate: 7.0,
-        is_verified: false,
-        expertise_tags: ['Cybersecurity', 'Data Privacy', 'Cloud Security'],
-        location: 'Austin, TX'
-      },
-      status: 'warm',
-      priority: 'high',
-      relationship_strength: 70,
-      follow_up_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-      notes: 'High engagement, potential partnership',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: '6',
-      influencer_id: 'inf_6',
-      influencer: {
-        id: '6', // Match Discover page ID
-        name: 'Michael Brown',
-        platform: 'LinkedIn',
-        industry: 'Healthcare',
-        bio: 'Healthcare innovation leader. Digital transformation in medicine.',
-        handle: '@michaelbrown',
-        website_url: 'https://michaelbrown.com',
-        audience_size: 25000,
-        engagement_rate: 3.5,
-        is_verified: true,
-        expertise_tags: ['Healthcare IT', 'Digital Health', 'Medtech'],
-        location: 'Chicago, IL'
-      },
-      status: 'cold',
-      priority: 'low',
-      relationship_strength: 25,
-      follow_up_date: null,
-      notes: 'Initial outreach pending',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  ];
-
-  // Load added influencers from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('addedInfluencers');
-    if (saved) {
-      try {
-        const addedIds = new Set(JSON.parse(saved) as string[]);
-        setAddedInfluencerIds(addedIds);
-        
-        // Filter mock influencers to show only added ones (IDs now match directly)
-        const addedInfluencers = mockInfluencers.filter(inf => {
-          const isAdded = addedIds.has(inf.influencer.id);
-          console.log(`Checking influencer ${inf.influencer.name}:`, {
-            influencerId: inf.influencer.id,
-            isAdded,
-            addedIds: Array.from(addedIds)
-          });
-          return isAdded;
-        });
-        setMyInfluencers(addedInfluencers);
-        console.log('Loaded added influencers:', addedInfluencers.length, 'from', addedIds.size, 'added IDs');
-        console.log('Added influencer names:', addedInfluencers.map(inf => inf.influencer.name));
-      } catch (error) {
-        console.error('Error loading added influencers:', error);
-        setError('Failed to load added influencers');
-      }
-    }
-  }, []);
-
-  // Listen for changes to added influencers
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const saved = localStorage.getItem('addedInfluencers');
-      if (saved) {
-        try {
-          const addedIds = new Set(JSON.parse(saved) as string[]);
-          setAddedInfluencerIds(addedIds);
-          
-          // Filter mock influencers to show only added ones (IDs now match directly)
-          const addedInfluencers = mockInfluencers.filter(inf => {
-            return addedIds.has(inf.influencer.id);
-          });
-          setMyInfluencers(addedInfluencers);
-        } catch (error) {
-          console.error('Error loading added influencers:', error);
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  const refetch = () => {
-    // Reload from localStorage
-    const saved = localStorage.getItem('addedInfluencers');
-    if (saved) {
-      try {
-        const addedIds = new Set(JSON.parse(saved));
-        
-        // Filter mock influencers to show only added ones (IDs now match directly)
-        const addedInfluencers = mockInfluencers.filter(inf => {
-          return addedIds.has(inf.influencer.id);
-        });
-        setMyInfluencers(addedInfluencers);
-      } catch (error) {
-        console.error('Error refetching influencers:', error);
-      }
-    }
-  };
-
-  // Use mock data if API data is not available or fails
-  const displayInfluencers = myInfluencers && myInfluencers.length > 0 ? myInfluencers : mockInfluencers;
+  // Use real data from API
+  const displayInfluencers = myInfluencers || [];
 
   const platformIcons = {
-    LinkedIn: Users,
-    Podcast: Mic,
-    Newsletter: Mail,
+    linkedin: Users,
+    podcast: Mic,
+    newsletter: Mail,
   };
 
   const statusColors = {
@@ -502,10 +287,9 @@ const Influencers = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Platforms</SelectItem>
-                    <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                  <SelectItem value="Twitter">Twitter</SelectItem>
-                    <SelectItem value="Podcast">Podcast</SelectItem>
-                    <SelectItem value="Newsletter">Newsletter</SelectItem>
+                    <SelectItem value="linkedin">LinkedIn</SelectItem>
+                    <SelectItem value="podcast">Podcast</SelectItem>
+                    <SelectItem value="newsletter">Newsletter</SelectItem>
                   </SelectContent>
                 </Select>
               <Select value={selectedIndustry || "all"} onValueChange={setSelectedIndustry}>
@@ -514,10 +298,15 @@ const Influencers = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Industries</SelectItem>
-                  <SelectItem value="Technology">Technology</SelectItem>
-                  <SelectItem value="Product">Product</SelectItem>
-                    <SelectItem value="Marketing">Marketing</SelectItem>
-                  <SelectItem value="Sales">Sales</SelectItem>
+                    <SelectItem value="AI/ML">AI/ML</SelectItem>
+                    <SelectItem value="Cybersecurity">Cybersecurity</SelectItem>
+                    <SelectItem value="DevTools">DevTools</SelectItem>
+                    <SelectItem value="SaaS">SaaS</SelectItem>
+                    <SelectItem value="MarTech">MarTech</SelectItem>
+                    <SelectItem value="Fintech">Fintech</SelectItem>
+                    <SelectItem value="EdTech">EdTech</SelectItem>
+                    <SelectItem value="HRTech">HRTech</SelectItem>
+                    <SelectItem value="Healthcare">Healthcare</SelectItem>
                   </SelectContent>
                 </Select>
               <Button variant="outline">
@@ -572,7 +361,7 @@ const Influencers = () => {
               <Users className="w-12 h-12 mx-auto mb-2" />
               <p className="text-lg font-medium">Failed to fetch user influencers.</p>
             </div>
-            <Button onClick={() => refetch()} variant="outline">
+            <Button onClick={() => refetchMyInfluencers()} variant="outline">
               Try Again
             </Button>
           </div>
