@@ -515,16 +515,12 @@ const Discover = () => {
                       const platformInfo = platformConfig[influencer.platform as keyof typeof platformConfig];
                       const PlatformIcon = platformInfo?.icon || Users;
                       
-                      // Generate mock audience match data
-                      const audienceMatch = Math.floor(Math.random() * 20) + 70; // 70-89%
-                      const roles = ["VP Marketing", "CMO", "Product Manager", "UX Designer", "Marketing Director", "Demand Gen Manager"];
-                      const companySizes = ["10-100 employees", "50-500 employees", "100-1000 employees"];
-                      
-                      const selectedRoles = roles
-                        .sort(() => 0.5 - Math.random())
-                        .slice(0, 2);
-                      
-                      const selectedCompanySize = companySizes[Math.floor(Math.random() * companySizes.length)];
+                      // Use real audience demographics from database
+                      const audienceMatch = influencer.audience_demographics?.buyer_alignment_score 
+                        ? Math.round(influencer.audience_demographics.buyer_alignment_score) 
+                        : 75; // Default fallback
+                      const roles = influencer.audience_demographics?.job_titles || ["Marketing Manager", "VP Marketing"];
+                      const companySize = influencer.audience_demographics?.company_size || "50-500 employees";
                       
                       return (
                         <Card key={influencer.id} className="bg-white rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 flex flex-col justify-between h-[380px]">
@@ -600,12 +596,12 @@ const Discover = () => {
                             </div>
                             <div className="space-y-1">
                               <div className="text-xs text-black">
-                                <span className="font-medium">Company Size:</span> {selectedCompanySize}
+                                <span className="font-medium">Company Size:</span> {companySize}
                               </div>
                               <div className="text-xs text-black">
                                 <span className="font-medium">Roles:</span> 
                                 <div className="flex flex-wrap gap-1 mt-1">
-                                  {selectedRoles.map((role) => (
+                                  {roles.slice(0, 2).map((role) => (
                                     <span key={role} className="rounded-full bg-blue-600 text-white px-2 py-1 text-xs">
                                       {role}
                                     </span>
@@ -624,16 +620,12 @@ const Discover = () => {
                       const platformInfo = platformConfig[influencer.platform as keyof typeof platformConfig];
                       const PlatformIcon = platformInfo?.icon || Users;
                       
-                      // Generate mock audience match data
-                      const audienceMatch = Math.floor(Math.random() * 20) + 70; // 70-89%
-                      const roles = ["VP Marketing", "CMO", "Product Manager", "UX Designer", "Marketing Director", "Demand Gen Manager"];
-                      const companySizes = ["10-100 employees", "50-500 employees", "100-1000 employees"];
-                      
-                      const selectedRoles = roles
-                        .sort(() => 0.5 - Math.random())
-                        .slice(0, 2);
-                      
-                      const selectedCompanySize = companySizes[Math.floor(Math.random() * companySizes.length)];
+                      // Use real audience demographics from database
+                      const audienceMatch = influencer.audience_demographics?.buyer_alignment_score 
+                        ? Math.round(influencer.audience_demographics.buyer_alignment_score) 
+                        : 75; // Default fallback
+                      const roles = influencer.audience_demographics?.job_titles || ["Marketing Manager", "VP Marketing"];
+                      const companySize = influencer.audience_demographics?.company_size || "50-500 employees";
                       
                       return (
                         <Card key={influencer.id} className="bg-white rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 h-[320px]">
@@ -711,13 +703,13 @@ const Discover = () => {
                                   <span className="text-sm font-bold text-blue-600">{audienceMatch}% match</span>
                                 </div>
                                 <div className="space-y-1">
-                                  <div className="text-xs text-black">
-                                    <span className="font-medium">Company Size:</span> {selectedCompanySize}
-                                  </div>
-                                  <div className="text-xs text-black">
-                                    <span className="font-medium">Roles:</span> 
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                      {selectedRoles.map((role) => (
+                              <div className="text-xs text-black">
+                                <span className="font-medium">Company Size:</span> {companySize}
+                              </div>
+                              <div className="text-xs text-black">
+                                <span className="font-medium">Roles:</span> 
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {roles.slice(0, 2).map((role) => (
                                         <span key={role} className="rounded-full bg-blue-600 text-white px-2 py-1 text-xs">
                                           {role}
                                         </span>
@@ -802,57 +794,20 @@ const Discover = () => {
                     const platformInfo = platformConfig[influencer.platform as keyof typeof platformConfig];
                     const PlatformIcon = platformInfo?.icon || Users;
                     
-                    // Generate mock intent data for demonstration
-                    const intentScore = Math.floor(Math.random() * 20) + 80; // 80-99%
-                    const audienceAlignment = Math.floor(Math.random() * 15) + 85; // 85-99%
-                    const recentMentions = Math.floor(Math.random() * 20) + 5; // 5-24
+                    // Use real data from database or show placeholder for intent features
+                    const intentScore = influencer.audience_demographics?.buyer_alignment_score 
+                      ? Math.round(influencer.audience_demographics.buyer_alignment_score) 
+                      : 85; // Default fallback
+                    const audienceAlignment = influencer.audience_demographics?.buyer_alignment_score 
+                      ? Math.round(influencer.audience_demographics.buyer_alignment_score) 
+                      : 85; // Default fallback
+                    const recentMentions = 0; // This would come from real analytics data
                     
-                    const buyingSignals = [
-                      "Pricing inquiries",
-                      "Demo requests", 
-                      "Competitor mentions",
-                      "Product feedback requests",
-                      "Partnership discussions",
-                      "Investment inquiries",
-                      "CRM evaluations",
-                      "Sales process optimization",
-                      "Team training needs"
-                    ];
-                    
-                    const contentThemes = [
-                      "SaaS metrics",
-                      "Growth hacking", 
-                      "Customer success",
-                      "Product development",
-                      "Market research",
-                      "Growth strategies",
-                      "Sales methodology",
-                      "CRM best practices",
-                      "Sales training"
-                    ];
-                    
-                    const roles = [
-                      "VP Marketing", "CMO", "Founder", "CEO", "Sales Director", "VP Sales"
-                    ];
-                    
-                    const companySizes = [
-                      "1-100 employees", "50-500 employees", "500+ employees"
-                    ];
-                    
-                    // Randomly select some signals and themes
-                    const selectedBuyingSignals = buyingSignals
-                      .sort(() => 0.5 - Math.random())
-                      .slice(0, 3);
-                    
-                    const selectedContentThemes = contentThemes
-                      .sort(() => 0.5 - Math.random())
-                      .slice(0, 3);
-                    
-                    const selectedRoles = roles
-                      .sort(() => 0.5 - Math.random())
-                      .slice(0, 2);
-                    
-                    const selectedCompanySize = companySizes[Math.floor(Math.random() * companySizes.length)];
+                    // Use real expertise tags or show placeholder
+                    const selectedBuyingSignals = influencer.expertise_tags?.slice(0, 3) || ["Content Marketing", "Growth Strategy", "B2B Sales"];
+                    const selectedContentThemes = influencer.expertise_tags?.slice(0, 3) || ["Industry Insights", "Best Practices", "Trends"];
+                    const selectedRoles = influencer.audience_demographics?.job_titles?.slice(0, 2) || ["Marketing Manager", "VP Marketing"];
+                    const selectedCompanySize = influencer.audience_demographics?.company_size || "50-500 employees";
                     
                     return (
                       <Card key={influencer.id} className="p-6 hover:shadow-lg transition-all duration-300">
@@ -1011,63 +966,84 @@ const Discover = () => {
               <Card className="p-6">
                 <h3 className="font-semibold mb-2">Platform Distribution</h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm">LinkedIn</span>
-                    <span className="text-sm font-medium">40%</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div className="bg-primary h-2 rounded-full" style={{ width: '40%' }} />
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Newsletter</span>
-                    <span className="text-sm font-medium">30%</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div className="bg-secondary h-2 rounded-full" style={{ width: '30%' }} />
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Podcast</span>
-                    <span className="text-sm font-medium">30%</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div className="bg-accent h-2 rounded-full" style={{ width: '30%' }} />
-                  </div>
+                  {(() => {
+                    const platformCounts = influencers.reduce((acc, inf) => {
+                      acc[inf.platform] = (acc[inf.platform] || 0) + 1;
+                      return acc;
+                    }, {} as Record<string, number>);
+                    
+                    const total = influencers.length;
+                    return Object.entries(platformCounts).map(([platform, count]) => {
+                      const percentage = Math.round((count / total) * 100);
+                      return (
+                        <div key={platform}>
+                          <div className="flex justify-between">
+                            <span className="text-sm capitalize">{platform}</span>
+                            <span className="text-sm font-medium">{percentage}%</span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div className="bg-primary h-2 rounded-full" style={{ width: `${percentage}%` }} />
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </Card>
 
               <Card className="p-6">
                 <h3 className="font-semibold mb-2">Engagement Trends</h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm">High Engagement (7%+)</span>
-                    <span className="text-sm font-medium text-green-600">3</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Medium Engagement (4-7%)</span>
-                    <span className="text-sm font-medium text-yellow-600">2</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Low Engagement (under 4%)</span>
-                    <span className="text-sm font-medium text-red-600">1</span>
-                  </div>
+                  {(() => {
+                    const highEngagement = influencers.filter(inf => (inf.engagement_rate || 0) >= 7).length;
+                    const mediumEngagement = influencers.filter(inf => (inf.engagement_rate || 0) >= 4 && (inf.engagement_rate || 0) < 7).length;
+                    const lowEngagement = influencers.filter(inf => (inf.engagement_rate || 0) < 4).length;
+                    
+                    return (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-sm">High Engagement (7%+)</span>
+                          <span className="text-sm font-medium text-green-600">{highEngagement}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">Medium Engagement (4-7%)</span>
+                          <span className="text-sm font-medium text-yellow-600">{mediumEngagement}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">Low Engagement (under 4%)</span>
+                          <span className="text-sm font-medium text-red-600">{lowEngagement}</span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </Card>
 
               <Card className="p-6">
-                <h3 className="font-semibold mb-2">Intent Scores</h3>
+                <h3 className="font-semibold mb-2">Audience Alignment</h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm">High Intent (90%+)</span>
-                    <span className="text-sm font-medium text-green-600">3</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Medium Intent (70-90%)</span>
-                    <span className="text-sm font-medium text-yellow-600">2</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Low Intent (under 70%)</span>
-                    <span className="text-sm font-medium text-red-600">1</span>
-                  </div>
+                  {(() => {
+                    const highAlignment = influencers.filter(inf => (inf.audience_demographics?.buyer_alignment_score || 0) >= 90).length;
+                    const mediumAlignment = influencers.filter(inf => (inf.audience_demographics?.buyer_alignment_score || 0) >= 70 && (inf.audience_demographics?.buyer_alignment_score || 0) < 90).length;
+                    const lowAlignment = influencers.filter(inf => (inf.audience_demographics?.buyer_alignment_score || 0) < 70).length;
+                    
+                    return (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-sm">High Alignment (90%+)</span>
+                          <span className="text-sm font-medium text-green-600">{highAlignment}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">Medium Alignment (70-90%)</span>
+                          <span className="text-sm font-medium text-yellow-600">{mediumAlignment}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">Low Alignment (under 70%)</span>
+                          <span className="text-sm font-medium text-red-600">{lowAlignment}</span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </Card>
             </div>
