@@ -53,7 +53,7 @@ const Discover = () => {
     limit: 20,
     search: searchTerm || undefined,
     platform: selectedFilters.find(f => ['LinkedIn', 'Podcast', 'Newsletter'].includes(f))?.toLowerCase() || undefined,
-    industry: selectedFilters.find(f => ['Technology', 'Product', 'Marketing', 'Sales', 'SaaS', 'Media'].includes(f)) || undefined,
+    industry: selectedFilters.find(f => ['AI/ML', 'Cybersecurity', 'DevTools'].includes(f)) || undefined,
   });
 
   const { 
@@ -314,7 +314,7 @@ const Discover = () => {
 
           {/* Quick Filters */}
           <div className="mt-4 flex flex-wrap gap-2">
-            {['Technology', 'LinkedIn', 'Podcast', 'Newsletter', '10K+ Followers', 'High Engagement'].map((filter) => (
+            {['AI/ML', 'Cybersecurity', 'DevTools', 'LinkedIn', '10K+ Followers', 'High Engagement'].map((filter) => (
               <Badge 
                 key={filter}
                 variant={selectedFilters.includes(filter) ? "default" : "outline"}
@@ -357,7 +357,7 @@ const Discover = () => {
                 <div>
                   <label className="text-sm font-medium mb-2 block">Platform</label>
                   <div className="space-y-2">
-                    {['LinkedIn', 'Twitter', 'Podcast', 'Newsletter'].map((platform) => (
+                    {['LinkedIn'].map((platform) => (
                       <label key={platform} className="flex items-center space-x-2">
                         <input
                           type="checkbox"
@@ -373,7 +373,7 @@ const Discover = () => {
                 <div>
                   <label className="text-sm font-medium mb-2 block">Industry</label>
                   <div className="space-y-2">
-                    {['Technology', 'Product', 'Marketing', 'Sales', 'SaaS', 'Media'].map((industry) => (
+                    {['AI/ML', 'Cybersecurity', 'DevTools'].map((industry) => (
                       <label key={industry} className="flex items-center space-x-2">
                         <input
                           type="checkbox"
