@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { checkAITrialEligibility, generateAIMessageWithTrial, adminResetTrials, setPremiumMode, forceResetTrials, type AIGenerationRequest } from "@/lib/premiumAIService";
+import { apiService } from "@/lib/api";
+import type { Influencer } from "@/lib/api";
 import { 
   ArrowLeft, 
   Send, 
@@ -40,12 +42,40 @@ const ContactInfluencer = () => {
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [trialInfo, setTrialInfo] = useState({ remainingTrials: 0, isPremium: false });
+  const [influencer, setInfluencer] = useState<Influencer | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Load trial info on component mount
   useEffect(() => {
     const trial = checkAITrialEligibility();
     setTrialInfo(trial);
   }, []);
+
+  // Fetch influencer data when component mounts or influencerId changes
+  useEffect(() => {
+    const fetchInfluencer = async () => {
+      if (!influencerId) {
+        setError("No influencer ID provided");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setError(null);
+        const influencerData = await apiService.getInfluencerById(influencerId);
+        setInfluencer(influencerData);
+      } catch (err) {
+        console.error("Error fetching influencer:", err);
+        setError(err instanceof Error ? err.message : "Failed to load influencer");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchInfluencer();
+  }, [influencerId]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -56,18 +86,9 @@ const ContactInfluencer = () => {
     notes: ""
   });
 
-  // Mock influencer data (in real app, this would come from API)
-  const influencer = {
-    id: influencerId,
-    name: "John Doe",
-    platform: "LinkedIn",
-    handle: "@johndoe",
-    email: "john@example.com",
-    website: "https://johndoe.com",
-    followers: 15000,
-    engagement_rate: 4.2,
-    industry: "Technology",
-    bio: "SaaS growth expert helping startups scale through content marketing."
+  // Helper function to get display values with fallbacks
+  const getDisplayValue = (value: any, fallback: string = "N/A") => {
+    return value || fallback;
   };
 
   // Email templates
@@ -297,7 +318,41 @@ Best regards,
           </Card>
         )}
 
-        {/* Header */}
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <p className="text-muted-foreground">Loading influencer details...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <AlertCircle className="w-12 h-12 text-destructive" />
+              <div>
+                <h3 className="text-lg font-semibold text-destructive">Error Loading Influencer</h3>
+                <p className="text-muted-foreground">{error}</p>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/influencers')}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Influencers
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Main Content - Only show when not loading and no error */}
+        {!isLoading && !error && influencer && (
+          <>
+            {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Button 
@@ -314,7 +369,7 @@ Best regards,
                 Contact {influencer.name}
               </h1>
               <p className="text-muted-foreground">
-                {influencer.platform} • {influencer.followers.toLocaleString()} followers • {influencer.engagement_rate}% engagement
+                {getDisplayValue(influencer.platform)} • {influencer.audience_size?.toLocaleString() || "N/A"} followers • {influencer.engagement_rate || "N/A"}% engagement
               </p>
             </div>
           </div>
@@ -325,14 +380,14 @@ Best regards,
               onClick={() => {
                 // Open influencer's platform profile in a new tab
                 let profileUrl = '';
-                const handle = influencer.handle.replace('@', '');
+                const handle = influencer.handle?.replace('@', '') || '';
                 
-                switch (influencer.platform.toLowerCase()) {
+                switch (influencer.platform?.toLowerCase()) {
                   case 'linkedin':
-                    profileUrl = `https://linkedin.com/in/${handle}`;
+                    profileUrl = influencer.linkedin_url || `https://linkedin.com/in/${handle}`;
                     break;
                   case 'twitter':
-                    profileUrl = `https://twitter.com/${handle}`;
+                    profileUrl = influencer.twitter_url || `https://twitter.com/${handle}`;
                     break;
                   case 'youtube':
                     profileUrl = `https://youtube.com/@${handle}`;
@@ -359,7 +414,7 @@ Best regards,
                     break;
                   default:
                     // Fallback to website if available
-                    profileUrl = influencer.website || '#';
+                    profileUrl = influencer.website_url || influencer.website || '#';
                 }
                 
                 if (profileUrl !== '#') {
@@ -382,13 +437,21 @@ Best regards,
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold">{influencer.name}</h3>
-                <p className="text-sm text-muted-foreground">{influencer.bio}</p>
+                <p className="text-sm text-muted-foreground">{getDisplayValue(influencer.bio, "No bio available")}</p>
                 <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
-                  <span>{influencer.handle}</span>
-                  <span>•</span>
-                  <span>{influencer.email}</span>
-                  <span>•</span>
-                  <span>{influencer.website}</span>
+                  <span>{getDisplayValue(influencer.handle, "No handle")}</span>
+                  {influencer.email && (
+                    <>
+                      <span>•</span>
+                      <span>{influencer.email}</span>
+                    </>
+                  )}
+                  {(influencer.website_url || influencer.website) && (
+                    <>
+                      <span>•</span>
+                      <span>{influencer.website_url || influencer.website}</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -688,6 +751,8 @@ Best regards,
             </Card>
           </TabsContent>
         </Tabs>
+          </>
+        )}
 
         <DeveloperPanel />
       </div>

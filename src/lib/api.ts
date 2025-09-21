@@ -250,13 +250,44 @@ class ApiService {
     }
   }
 
+  async getInfluencerById(id: string): Promise<Influencer> {
+    try {
+      const { data, error } = await supabase
+        .from('influencers')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data) {
+        throw new Error('Influencer not found');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching influencer by ID:', error);
+      throw new Error(error instanceof Error ? error.message : 'Failed to fetch influencer');
+    }
+  }
+
   async getMyInfluencers(params: {
     page?: number;
     limit?: number;
     status?: string;
   } = {}): Promise<PaginatedResponse<UserInfluencer>> {
     try {
-      const userId = await this.getUserId();
+      // For demo purposes, use a mock user ID when not authenticated
+      let userId;
+      try {
+        userId = await this.getUserId();
+      } catch (error) {
+        // If not authenticated, use a demo user ID
+        userId = 'demo-user-123';
+        console.log('Using demo user ID for getMyInfluencers');
+      }
       const page = params.page || 1;
       const limit = params.limit || 20;
       const offset = (page - 1) * limit;
@@ -302,7 +333,15 @@ class ApiService {
 
   async addToMyList(data: AddToMyListRequest): Promise<ApiResponse> {
     try {
-      const userId = await this.getUserId();
+      // For demo purposes, use a mock user ID when not authenticated
+      let userId;
+      try {
+        userId = await this.getUserId();
+      } catch (error) {
+        // If not authenticated, use a demo user ID
+        userId = 'demo-user-123';
+        console.log('Using demo user ID for addToMyList');
+      }
 
       // Check if influencer exists
       const { data: influencer, error: influencerError } = await supabase
